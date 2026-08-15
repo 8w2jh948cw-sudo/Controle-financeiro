@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Publicar Meu Dinheiro
 
 on:
   push:
@@ -22,15 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm install
-      - run: npm run build
+      - name: Preparar site
+        run: |
+          mkdir -p _site/assets
+          cp index.html 404.html manifest.webmanifest icon.svg sw.js .nojekyll _site/
+          cp assets/* _site/assets/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
-      - name: Deploy
+          path: _site
+      - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4
