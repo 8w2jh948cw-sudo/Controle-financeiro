@@ -1,14 +1,16 @@
 # Meu Dinheiro
 
-Aplicativo financeiro pessoal simples, responsivo e instalável, criado com React e TypeScript. Todos os lançamentos são armazenados somente no `localStorage` do navegador.
+Primeira versão visual e funcional do aplicativo de organização financeira pessoal.
 
-## Desenvolvimento
+## O que já funciona
 
-```bash
-npm install
-npm run dev
-```
+- painel inicial com resumo financeiro;
+- extrato com busca e filtros;
+- orçamentos e metas;
+- carteira de contas e cartão;
+- análise financeira;
+- inclusão de receitas e despesas;
+- dados adicionais salvos somente no navegador do aparelho;
+- instalação como web app e funcionamento offline após o primeiro acesso.
 
-## Publicação no GitHub Pages
-
-O workflow incluído gera a versão de produção e publica o conteúdo automaticamente no GitHub Pages após cada push para `main`. Em **Settings → Pages**, selecione **GitHub Actions** como fonte.
+A pasta `source` contém o código-fonte usado para gerar os arquivos publicados. O GitHub Pages publica automaticamente a versão da raiz após cada atualização da branch `main`.
