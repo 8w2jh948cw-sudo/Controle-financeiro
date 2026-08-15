@@ -1,16 +1,20 @@
 # Meu Dinheiro
 
-Primeira versão visual e funcional do aplicativo de organização financeira pessoal.
+Aplicativo de organização financeira pessoal, responsivo e instalável.
 
-## O que já funciona
+## O que funciona
 
 - painel inicial com resumo financeiro;
-- extrato com busca e filtros;
-- orçamentos e metas;
-- carteira de contas e cartão;
-- análise financeira;
 - inclusão de receitas e despesas;
-- dados adicionais salvos somente no navegador do aparelho;
+- transferências entre contas;
+- criação de contas e cartões;
+- detalhes de contas e cartões;
+- extrato com busca, filtros e navegação por mês;
+- edição de tetos e limites de orçamento;
+- metas e cofrinhos com novos aportes;
+- assistente com resumo financeiro;
+- ocultação de valores e ajustes;
+- dados salvos somente no navegador do aparelho;
 - instalação como web app e funcionamento offline após o primeiro acesso.
 
 A pasta `source` contém o código-fonte usado para gerar os arquivos publicados. O GitHub Pages publica automaticamente a versão da raiz após cada atualização da branch `main`.
