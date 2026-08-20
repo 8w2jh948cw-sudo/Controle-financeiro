@@ -25,7 +25,7 @@ jobs:
       - name: Preparar site
         run: |
           mkdir -p _site/assets
-          cp index.html 404.html manifest.webmanifest icon.svg sw.js .nojekyll _site/
+          cp index.html 404.html manifest.webmanifest icon.svg apple-touch-icon.png sw.js .nojekyll _site/
           cp assets/* _site/assets/
       - uses: actions/upload-pages-artifact@v3
         with:

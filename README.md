@@ -1,20 +1,21 @@
-# Meu Dinheiro
+# Meu Dinheiro Inteligente
 
-Aplicativo de organização financeira pessoal, responsivo e instalável.
+Web app de controle financeiro pessoal, pensado primeiro para iPhone.
 
-## O que funciona
+## Abrir o aplicativo
 
-- painel inicial com resumo financeiro;
-- inclusão de receitas e despesas;
-- transferências entre contas;
-- criação de contas e cartões;
-- detalhes de contas e cartões;
-- extrato com busca, filtros e navegação por mês;
-- edição de tetos e limites de orçamento;
-- metas e cofrinhos com novos aportes;
-- assistente com resumo financeiro;
-- ocultação de valores e ajustes;
-- dados salvos somente no navegador do aparelho;
-- instalação como web app e funcionamento offline após o primeiro acesso.
+https://8w2jh948cw-sudo.github.io/Controle-financeiro/
 
-A pasta `source` contém o código-fonte usado para gerar os arquivos publicados. O GitHub Pages publica automaticamente a versão da raiz após cada atualização da branch `main`.
+## Recursos
+
+- entradas e saídas separadas;
+- temas claro, escuro e automático;
+- cores de entradas e saídas personalizáveis;
+- contas, cartões, limites e metas;
+- importação de extratos CSV, OFX e QFX;
+- categorização automática por regras;
+- diagnóstico financeiro local, sem IA;
+- banco de dados no navegador, backup e exportação;
+- PWA instalável com funcionamento offline.
+
+O aplicativo compilado fica na raiz do repositório. O projeto React + TypeScript completo fica na pasta `source`.
