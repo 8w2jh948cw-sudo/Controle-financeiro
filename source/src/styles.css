@@ -86,15 +86,26 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .month-picker { width: max-content; max-width: 100%; min-height: 50px; margin: 0 0 16px; padding: 0 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 17px; box-shadow: 0 5px 18px rgba(22, 47, 37, .06); display: flex; align-items: center; gap: 8px; color: var(--green-2); }
 .month-picker select { border: 0; background: transparent; color: inherit; font-weight: 700; min-width: 130px; appearance: none; outline: none; }
 
-.summary-card { min-height: 195px; background: var(--surface); border: 1px solid var(--line); border-radius: 27px; box-shadow: var(--shadow); padding: 25px 23px; margin-bottom: 18px; position: relative; display: grid; grid-template-columns: 1fr auto; gap: 18px; overflow: hidden; }
-.summary-card::before { content: ""; width: 170px; height: 170px; border-radius: 50%; position: absolute; right: -70px; top: -85px; background: color-mix(in srgb, var(--income-color) 15%, var(--surface)); }
-.summary-card.expense::before { background: color-mix(in srgb, var(--expense-color) 13%, var(--surface)); }
 .eyebrow { color: #a0a6b2; letter-spacing: 1.25px; font-size: 11px; font-weight: 800; }
-.summary-value { font-size: clamp(38px, 11vw, 50px); line-height: 1; letter-spacing: -2.5px; display: block; margin-top: 10px; color: var(--income-color); white-space: nowrap; }
-.summary-card.expense .summary-value { color: var(--expense-color); }
-.summary-icon { width: 58px; height: 58px; border-radius: 19px; color: var(--income-color); background: color-mix(in srgb, var(--income-color) 14%, var(--surface)); display: grid; place-items: center; position: relative; }
-.summary-card.expense .summary-icon { color: var(--expense-color); background: color-mix(in srgb, var(--expense-color) 13%, var(--surface)); }
-.summary-comparison { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; color: #9ca1aa; font-size: 13px; align-self: end; }
+.monthly-overview-card { background: var(--surface); border: 1px solid var(--line); border-radius: 27px; box-shadow: var(--shadow); padding: 22px; margin-bottom: 18px; position: relative; overflow: hidden; }
+.monthly-overview-card::before { content: ""; width: 180px; height: 180px; border-radius: 50%; position: absolute; right: -82px; top: -100px; background: color-mix(in srgb, var(--income-color) 13%, var(--surface)); pointer-events: none; }
+.monthly-overview-heading { display: flex; justify-content: space-between; align-items: center; position: relative; }
+.monthly-overview-heading h2 { margin: 5px 0 0; font-size: 17px; letter-spacing: -.4px; }
+.available-icon { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; color: var(--green-2); background: color-mix(in srgb, var(--income-color) 13%, var(--surface)); }
+.available-value { display: grid; gap: 5px; margin: 23px 0 20px; position: relative; }
+.available-value small { color: var(--muted); font-size: 12px; }
+.available-value strong { font-size: clamp(35px, 10vw, 47px); line-height: 1; letter-spacing: -2.2px; color: var(--ink); white-space: nowrap; }
+.available-value strong.negative { color: var(--expense-color); }
+.monthly-overview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding-top: 17px; border-top: 1px solid var(--line); }
+.monthly-overview-grid span { min-width: 0; display: grid; gap: 5px; }
+.monthly-overview-grid span:nth-child(2) { text-align: center; }
+.monthly-overview-grid span:last-child { text-align: right; }
+.monthly-overview-grid small { color: var(--muted); font-size: 9.5px; }
+.monthly-overview-grid strong { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.monthly-overview-grid strong.income { color: var(--income-color); }
+.monthly-overview-grid strong.expense { color: var(--expense-color); }
+.available-note { display: flex; align-items: flex-start; gap: 6px; margin: 16px 0 0; padding: 10px 11px; border-radius: 13px; background: var(--surface-tint); color: var(--muted); font-size: 10.5px; line-height: 1.35; }
+.available-note svg { flex: 0 0 auto; margin-top: 1px; }
 .positive-pill, .warning-pill, .neutral-pill { display: inline-flex; align-items: center; gap: 3px; padding: 6px 10px; border-radius: 999px; font-weight: 800; color: #21844f; background: #dcf9e5; }
 .warning-pill { color: #d9575e; background: #fff0f0; }
 .neutral-pill { color: #68746e; background: #eef1ee; }
@@ -370,8 +381,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 @media (max-width: 365px) {
   .page { padding-left: 13px; padding-right: 13px; }
-  .summary-card { padding: 21px 18px; }
-  .summary-value { font-size: 35px; }
+  .monthly-overview-card { padding: 19px 16px; }
+  .available-value strong { font-size: 33px; }
+  .monthly-overview-grid strong { font-size: 10px; }
   .quick-card { min-height: 125px; padding: 15px; }
   .quick-card strong { font-size: 16px; }
   .transaction-row { padding-left: 13px; padding-right: 13px; }

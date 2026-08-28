@@ -79,15 +79,13 @@ function TransactionRow({ transaction, state, onClick }: { transaction: Transact
 }
 
 function HomeView({ state, month, setMonth, onModal, onTab }: { state: AppState; month: string; setMonth: (month: string) => void; onModal: (modal: Modal) => void; onTab: (tab: Tab) => void }) {
-  const [flow, setFlow] = useState<"expense" | "income">("expense");
   const totals = monthTotals(state.transactions, month);
-  const date = new Date(month + "-01T12:00:00");
-  date.setMonth(date.getMonth() - 1);
-  const previousKey = localISODate(date).slice(0, 7);
-  const previous = monthTotals(state.transactions, previousKey);
-  const currentValue = flow === "expense" ? totals.expense : totals.income;
-  const previousValue = flow === "expense" ? previous.expense : previous.income;
-  const change = previousValue ? Math.round(((currentValue - previousValue) / previousValue) * 100) : null;
+  const result = totals.income - totals.expense;
+  const today = localISODate();
+  const transactionsUntilToday = state.transactions.filter((transaction) => transaction.date <= today);
+  const availableToUse = state.accounts
+    .filter((account) => account.type === "checking" || account.type === "cash")
+    .reduce((sum, account) => sum + accountBalance(account, transactionsUntilToday), 0);
   const recent = state.transactions.filter((item) => item.date.startsWith(month)).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 5);
   const diagnostics = buildDiagnostics(state, month);
   const spent = totals.expense;
@@ -97,13 +95,23 @@ function HomeView({ state, month, setMonth, onModal, onTab }: { state: AppState;
   return <main className="page home-page">
     <section className="welcome"><span>Olá, {state.settings.userName || "Vinícius"}</span><h1>Como está seu dinheiro?</h1></section>
     {state.demoMode && <div className="demo-banner"><Icon name="info" size={18} /><span>Exemplo preenchido para você explorar. Apague os dados em Ajustes quando quiser começar.</span></div>}
-    <div className="segmented" role="tablist"><button className={"income-tab " + (flow === "income" ? "active" : "")} onClick={() => setFlow("income")}><Icon name="arrowUp" size={18} /> Entradas</button><button className={"expense-tab " + (flow === "expense" ? "active" : "")} onClick={() => setFlow("expense")}><Icon name="arrowDown" size={18} /> Saídas</button></div>
     <MonthPicker value={month} onChange={setMonth} />
 
-    <section className={"summary-card " + flow}>
-      <div><span className="eyebrow">{flow === "expense" ? "TOTAL GASTO" : "TOTAL RECEBIDO"}</span><strong className="summary-value">{hideableMoney(currentValue, state.settings.hiddenValues)}</strong></div>
-      <span className="summary-icon"><Icon name={flow === "expense" ? "wallet" : "income"} size={30} /></span>
-      <div className="summary-comparison">{change === null ? <span className="neutral-pill">Primeiro mês</span> : <span className={change <= 0 && flow === "expense" || change >= 0 && flow === "income" ? "positive-pill" : "warning-pill"}><Icon name={change <= 0 ? "down" : "up"} size={15} /> {Math.abs(change)}%</span>}<span>vs. mês anterior</span></div>
+    <section className="monthly-overview-card">
+      <div className="monthly-overview-heading">
+        <div><span className="eyebrow">RESUMO DO MÊS</span><h2>{monthLabel(month)}</h2></div>
+        <span className="available-icon"><Icon name="wallet" size={25} /></span>
+      </div>
+      <div className="available-value">
+        <small>Disponível para usar agora</small>
+        <strong className={availableToUse < 0 ? "negative" : ""}>{hideableMoney(availableToUse, state.settings.hiddenValues)}</strong>
+      </div>
+      <div className="monthly-overview-grid">
+        <span><small>Entradas</small><strong className="income">{hideableMoney(totals.income, state.settings.hiddenValues)}</strong></span>
+        <span><small>Saídas</small><strong className="expense">{hideableMoney(totals.expense, state.settings.hiddenValues)}</strong></span>
+        <span><small>Resultado</small><strong className={result < 0 ? "expense" : "income"}>{result > 0 ? "+" : ""}{hideableMoney(result, state.settings.hiddenValues)}</strong></span>
+      </div>
+      <p className="available-note"><Icon name="info" size={15} /> Poupança, investimentos, metas e limite do cartão não entram no disponível.</p>
     </section>
 
     <section className="quick-grid" aria-label="Ações rápidas">
