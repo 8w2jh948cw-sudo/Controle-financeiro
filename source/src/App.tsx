@@ -136,7 +136,6 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
   const pendingCount = state.transactions.filter((transaction) => transaction.needsReview).length;
 
   return <main className="page home-page">
-    <section className="welcome"><span>Olá, {state.settings.userName || "Vinícius"}</span><h1>Como está seu dinheiro?</h1></section>
     <MonthPicker value={month} onChange={setMonth} />
 
     <section className="monthly-overview-card">

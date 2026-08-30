@@ -72,9 +72,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 .page { padding: 20px 18px 10px; animation: enter .24s ease both; }
 @keyframes enter { from { opacity: 0; transform: translateY(5px); } }
-.welcome { margin: 5px 2px 20px; }
-.welcome span { color: #7e8790; font-size: 14px; }
-.welcome h1, .page-title h1 { margin: 4px 0 0; font-size: clamp(25px, 7vw, 32px); line-height: 1.12; letter-spacing: -1.15px; }
+.page-title h1 { margin: 4px 0 0; font-size: clamp(25px, 7vw, 32px); line-height: 1.12; letter-spacing: -1.15px; }
 .demo-banner { background: #edf7f0; color: #4b6c5d; border: 1px solid #d9ebdf; padding: 11px 12px; border-radius: 14px; display: flex; gap: 8px; align-items: flex-start; font-size: 12px; line-height: 1.42; margin-bottom: 16px; }
 
 .segmented { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; padding: 5px; background: var(--surface-soft); border-radius: 20px; margin-bottom: 15px; }
