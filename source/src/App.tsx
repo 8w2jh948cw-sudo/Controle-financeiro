@@ -88,6 +88,7 @@ function HomeView({ state, month, setMonth, onModal, onTab }: { state: AppState;
     .reduce((sum, account) => sum + accountBalance(account, transactionsUntilToday), 0);
   const recent = state.transactions.filter((item) => item.date.startsWith(month)).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)).slice(0, 5);
   const diagnostics = buildDiagnostics(state, month);
+  const homeDiagnostics = diagnostics.slice(0, Math.max(1, Math.min(5, state.settings.diagnosticMaxCards)));
   const spent = totals.expense;
   const budget = state.budgets.reduce((sum, item) => sum + item.limit, 0);
   const progress = budget ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
@@ -121,9 +122,12 @@ function HomeView({ state, month, setMonth, onModal, onTab }: { state: AppState;
       <button className="quick-card" onClick={() => onModal({ type: "transaction", kind: "transfer" })}><Icon name="transfer" size={28} /><strong>Transferir<br/>entre contas</strong></button>
     </section>
 
-    {state.settings.diagnosticsEnabled && diagnostics[0] && <button className={"diagnostic-card " + diagnostics[0].tone} onClick={() => onTab("analysis")}>
-      <span className="diagnostic-icon"><Icon name={diagnostics[0].icon as IconName} /></span><span><small>DIAGNÓSTICO AUTOMÁTICO · SEM IA</small><strong>{diagnostics[0].title}</strong><p>{diagnostics[0].message}</p></span><Icon name="chevron" size={18} />
-    </button>}
+    {state.settings.diagnosticsEnabled && homeDiagnostics.length > 0 && <section className="home-diagnostics">
+      <div className="home-diagnostics-heading"><div><span className="eyebrow">DICAS E AVISOS</span><h2>Entenda seu mês</h2></div><button onClick={() => onTab("analysis")}>Ver todos</button></div>
+      <div className="diagnostic-card-stack">{homeDiagnostics.map((diagnostic) => <button className={"diagnostic-card " + diagnostic.tone} key={diagnostic.id} onClick={() => onTab("analysis")}>
+        <span className="diagnostic-icon"><Icon name={diagnostic.icon as IconName} /></span><span><small>{diagnostic.tone === "warning" ? "AVISO" : diagnostic.tone === "positive" ? "BOA NOTÍCIA" : "DICA"} · SEM IA</small><strong>{diagnostic.title}</strong><p>{diagnostic.message}</p></span><Icon name="chevron" size={18} />
+      </button>)}</div>
+    </section>}
 
     <section className="list-card">
       <div className="section-heading"><div><span className="eyebrow">ÚLTIMAS TRANSAÇÕES</span><h2>Movimentações recentes</h2></div><button onClick={() => onTab("transactions")}>Ver todas</button></div>
@@ -227,7 +231,7 @@ function AnalysisView({ state, month }: { state: AppState; month: string }) {
       })}{!items.length && <EmptyState icon="chart" title="Ainda sem gráfico" text="As despesas deste mês aparecerão aqui por categoria." />}</div>
     </section>
     <section className="chart-card comparison-card"><span className="eyebrow">COMPARAÇÃO DE SAÍDAS</span><div className="bar-row"><span>Mês anterior</span><div><i style={{ width: prior.expense / maxBar * 100 + "%" }} /></div><strong>{hideableMoney(prior.expense, state.settings.hiddenValues)}</strong></div><div className="bar-row current"><span>Mês atual</span><div><i style={{ width: current.expense / maxBar * 100 + "%" }} /></div><strong>{hideableMoney(current.expense, state.settings.hiddenValues)}</strong></div></section>
-    {state.settings.diagnosticsEnabled && <section className="diagnostics-section"><div className="section-heading"><div><span className="eyebrow">LEITURA DO SEU MÊS</span><h2>Diagnóstico automático</h2></div><span className="no-ai-badge">Sem IA</span></div>{diagnostics.map((diagnostic) => <div className={"diagnostic-list-item " + diagnostic.tone} key={diagnostic.id}><span><Icon name={diagnostic.icon as IconName} /></span><div><strong>{diagnostic.title}</strong><p>{diagnostic.message}</p></div></div>)}</section>}
+    {state.settings.diagnosticsEnabled && <section className="diagnostics-section"><div className="section-heading"><div><span className="eyebrow">LEITURA DO SEU MÊS</span><h2>Dicas e avisos personalizados</h2></div><span className="no-ai-badge">Sem IA</span></div>{diagnostics.map((diagnostic) => <div className={"diagnostic-list-item " + diagnostic.tone} key={diagnostic.id}><span><Icon name={diagnostic.icon as IconName} /></span><div><small>{diagnostic.tone === "warning" ? "AVISO" : diagnostic.tone === "positive" ? "BOA NOTÍCIA" : "DICA"}</small><strong>{diagnostic.title}</strong><p>{diagnostic.message}</p></div></div>)}</section>}
   </main>;
 }
 
@@ -341,6 +345,10 @@ function RulesSheet({ state, onClose, onChange }: { state: AppState; onClose: ()
 function downloadBlob(content: string, filename: string, type = "application/json") { const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 500); }
 const csvEscape = (value: string | number) => `"${String(value).replace(/"/g, '""')}"`;
 
+function SettingToggle({ title, description, checked, onChange, compact = false }: { title: string; description: string; checked: boolean; onChange: (checked: boolean) => void; compact?: boolean }) {
+  return <label className={"toggle-row " + (compact ? "compact-toggle" : "")}><span><strong>{title}</strong><small>{description}</small></span><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /></label>;
+}
+
 function SettingsSheet({ state, onClose, onState, onRules }: { state: AppState; onClose: () => void; onState: (state: AppState) => void; onRules: () => void }) {
   const [confirmReset, setConfirmReset] = useState<"demo" | "blank" | null>(null);
   const setSetting = <K extends keyof AppState["settings"]>(key: K, value: AppState["settings"][K]) => {
@@ -385,8 +393,47 @@ function SettingsSheet({ state, onClose, onState, onRules }: { state: AppState; 
         </div>
       </div>
 
-      <label className="toggle-row"><span><strong>Ocultar valores</strong><small>Esconde saldos e totais na tela.</small></span><input type="checkbox" checked={state.settings.hiddenValues} onChange={(event) => setSetting("hiddenValues", event.target.checked)} /></label>
-      <label className="toggle-row"><span><strong>Diagnóstico automático</strong><small>Mensagens calculadas por regras, sem IA.</small></span><input type="checkbox" checked={state.settings.diagnosticsEnabled} onChange={(event) => setSetting("diagnosticsEnabled", event.target.checked)} /></label>
+      <SettingToggle title="Ocultar valores" description="Esconde saldos e totais na tela." checked={state.settings.hiddenValues} onChange={(checked) => setSetting("hiddenValues", checked)} />
+      <SettingToggle title="Dicas e avisos automáticos" description="Frases calculadas no aparelho, sem IA e sem custos." checked={state.settings.diagnosticsEnabled} onChange={(checked) => setSetting("diagnosticsEnabled", checked)} />
+
+      {state.settings.diagnosticsEnabled && <details className="diagnostic-settings">
+        <summary><span className="settings-icon"><Icon name="sparkles" /></span><span><strong>Personalizar dicas e avisos</strong><small>Escolha a quantidade, sensibilidade e tipos de leitura.</small></span><Icon name="chevron" size={18} /></summary>
+        <div className="diagnostic-settings-body">
+          <div className="setting-block"><span><strong>Cartões na tela inicial</strong><small>Os mais importantes aparecem primeiro.</small></span><div className="number-picker" role="group" aria-label="Quantidade de cartões na tela inicial">{[1, 2, 3, 4, 5].map((count) => <button type="button" key={count} className={state.settings.diagnosticMaxCards === count ? "active" : ""} onClick={() => setSetting("diagnosticMaxCards", count)}>{count}</button>)}</div></div>
+
+          <div className="setting-block"><span><strong>Sensibilidade das comparações</strong><small>Define o tamanho da mudança necessária para gerar uma mensagem.</small></span><div className="sensitivity-picker">{([
+            { value: "low", label: "Só grandes", hint: "20%" },
+            { value: "balanced", label: "Equilibrada", hint: "10%" },
+            { value: "high", label: "Detalhada", hint: "5%" },
+          ] as const).map((option) => <button type="button" key={option.value} className={state.settings.diagnosticSensitivity === option.value ? "active" : ""} onClick={() => setSetting("diagnosticSensitivity", option.value)}><strong>{option.label}</strong><small>{option.hint}</small></button>)}</div></div>
+
+          <SettingToggle compact title="Comparar períodos equivalentes" description="Hoje com o mesmo dia do mês passado." checked={state.settings.diagnosticSamePeriod} onChange={(checked) => setSetting("diagnosticSamePeriod", checked)} />
+
+          <div className="diagnostic-subgroup"><span className="eyebrow">TIPOS DE LEITURA</span>
+            <SettingToggle compact title="Entradas" description="Mudanças no ritmo do que você recebeu." checked={state.settings.diagnosticIncomeTrends} onChange={(checked) => setSetting("diagnosticIncomeTrends", checked)} />
+            <SettingToggle compact title="Saídas" description="Aumento ou queda dos gastos gerais." checked={state.settings.diagnosticExpenseTrends} onChange={(checked) => setSetting("diagnosticExpenseTrends", checked)} />
+            <SettingToggle compact title="Categorias" description="Mercado, alimentação, transporte e outras." checked={state.settings.diagnosticCategoryTrends} onChange={(checked) => setSetting("diagnosticCategoryTrends", checked)} />
+            <SettingToggle compact title="Limites e ritmo" description="Avisos de orçamento e uso mais cedo." checked={state.settings.diagnosticBudgetPace} onChange={(checked) => setSetting("diagnosticBudgetPace", checked)} />
+            <SettingToggle compact title="Projeção do fim do mês" description="Estimativa simples pela média diária." checked={state.settings.diagnosticProjections} onChange={(checked) => setSetting("diagnosticProjections", checked)} />
+            <SettingToggle compact title="Contas recorrentes" description="Variações e faixa esperada da energia." checked={state.settings.diagnosticBillAlerts} onChange={(checked) => setSetting("diagnosticBillAlerts", checked)} />
+            <SettingToggle compact title="Pequenos gastos" description="Soma despesas menores e frequentes." checked={state.settings.diagnosticSmallExpenses} onChange={(checked) => setSetting("diagnosticSmallExpenses", checked)} />
+          </div>
+
+          <div className="diagnostic-subgroup"><span className="eyebrow">TOM DAS MENSAGENS</span>
+            <div className="tone-options">
+              <label><input type="checkbox" checked={state.settings.diagnosticShowWarnings} onChange={(event) => setSetting("diagnosticShowWarnings", event.target.checked)} /><span className="warning-dot" />Avisos</label>
+              <label><input type="checkbox" checked={state.settings.diagnosticShowPositive} onChange={(event) => setSetting("diagnosticShowPositive", event.target.checked)} /><span className="positive-dot" />Boas notícias</label>
+              <label><input type="checkbox" checked={state.settings.diagnosticShowNeutral} onChange={(event) => setSetting("diagnosticShowNeutral", event.target.checked)} /><span className="neutral-dot" />Dicas neutras</label>
+            </div>
+          </div>
+
+          <div className="diagnostic-subgroup"><span className="eyebrow">FAIXAS PESSOAIS</span><div className="form-grid diagnostic-values">
+            <Field label="Alerta de energia acima de"><input inputMode="decimal" value={String(state.settings.energyExpectedMax).replace(".", ",")} onChange={(event) => setSetting("energyExpectedMax", Math.max(0, parseMoney(event.target.value)))} /></Field>
+            <Field label="Pequeno gasto até"><input inputMode="decimal" value={String(state.settings.smallExpenseLimit).replace(".", ",")} onChange={(event) => setSetting("smallExpenseLimit", Math.max(1, parseMoney(event.target.value)))} /></Field>
+          </div><Field label="Avisar a partir de quantos pequenos gastos"><input type="number" inputMode="numeric" min="2" max="30" value={state.settings.smallExpenseCount} onChange={(event) => setSetting("smallExpenseCount", Math.max(2, Math.min(30, Number(event.target.value) || 2)))} /></Field></div>
+          <p className="diagnostic-privacy"><Icon name="check" size={16} /> Tudo é calculado no seu aparelho. Nenhum valor é enviado para uma API.</p>
+        </div>
+      </details>}
       <button className="settings-button" onClick={onRules}><span className="settings-icon"><Icon name="rule" /></span><span><strong>Regras de categorização</strong><small>Ensine o app a reconhecer descrições.</small></span><Icon name="chevron" size={18} /></button>
 
       <div className="settings-group">

@@ -64,6 +64,22 @@ export type AppSettings = {
   userName: string;
   hiddenValues: boolean;
   diagnosticsEnabled: boolean;
+  diagnosticMaxCards: number;
+  diagnosticSensitivity: "low" | "balanced" | "high";
+  diagnosticSamePeriod: boolean;
+  diagnosticIncomeTrends: boolean;
+  diagnosticExpenseTrends: boolean;
+  diagnosticCategoryTrends: boolean;
+  diagnosticBudgetPace: boolean;
+  diagnosticProjections: boolean;
+  diagnosticBillAlerts: boolean;
+  diagnosticSmallExpenses: boolean;
+  diagnosticShowPositive: boolean;
+  diagnosticShowWarnings: boolean;
+  diagnosticShowNeutral: boolean;
+  energyExpectedMax: number;
+  smallExpenseLimit: number;
+  smallExpenseCount: number;
   theme: "light" | "dark" | "system";
   incomeColor: string;
   expenseColor: string;
@@ -102,4 +118,5 @@ export type Diagnostic = {
   message: string;
   tone: "positive" | "warning" | "neutral";
   icon: string;
+  priority: number;
 };
