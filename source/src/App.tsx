@@ -16,6 +16,8 @@ type Modal =
   | { type: "account"; account?: Account }
   | { type: "budget"; budget?: Budget }
   | { type: "goal"; goal?: Goal }
+  | { type: "demoInfo" }
+  | { type: "availableInfo" }
   | null;
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -52,13 +54,14 @@ function PigMark() {
   return <svg viewBox="0 0 48 38" aria-hidden="true"><path d="M7 15c0-7 7-12 17-12 5 0 9 1 12 4l6-2-2 7c2 2 3 5 3 8 0 7-5 12-13 14v4h-6v-3h-8v3h-6v-5c-5-3-7-9-7-15V9l5 4"/><circle cx="33" cy="15" r="1.4"/><path d="M20 8c3-2 7-2 10 0M43 22h3"/></svg>;
 }
 
-function AppHeader({ state, onSettings, onToggleValues }: { state: AppState; onSettings: () => void; onToggleValues: () => void }) {
+function AppHeader({ state, onSettings, onToggleValues, onDemoInfo }: { state: AppState; onSettings: () => void; onToggleValues: () => void; onDemoInfo: () => void }) {
   return <header className="app-header">
     <div className="brand"><span className="brand-mark"><PigMark /></span><span><strong>Meu Dinheiro</strong><small>inteligente e simples</small></span></div>
     <div className="header-actions">
       <button className="icon-button" onClick={onToggleValues} aria-label={state.settings.hiddenValues ? "Mostrar valores" : "Ocultar valores"}><Icon name={state.settings.hiddenValues ? "eyeOff" : "eye"} /></button>
       <button className="icon-button" onClick={onSettings} aria-label="Ajustes"><Icon name="settings" /></button>
     </div>
+    {state.demoMode && <button className="header-demo-info" onClick={onDemoInfo} aria-label="Informações sobre os dados de exemplo"><Icon name="info" size={17} /></button>}
   </header>;
 }
 
@@ -100,7 +103,6 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
 
   return <main className="page home-page">
     <section className="welcome"><span>Olá, {state.settings.userName || "Vinícius"}</span><h1>Como está seu dinheiro?</h1></section>
-    {state.demoMode && <div className="demo-banner"><Icon name="info" size={18} /><span>Exemplo preenchido para você explorar. Apague os dados em Ajustes quando quiser começar.</span></div>}
     <MonthPicker value={month} onChange={setMonth} />
 
     <section className="monthly-overview-card">
@@ -109,7 +111,7 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
         <span className="available-icon"><Icon name="wallet" size={25} /></span>
       </div>
       <div className="available-value">
-        <small>Disponível para usar agora</small>
+        <span className="available-label"><small>Disponível para usar agora</small><button onClick={() => onModal({ type: "availableInfo" })} aria-label="Entender o valor disponível"><Icon name="info" size={17} /></button></span>
         <strong className={availableToUse < 0 ? "negative" : ""}>{hideableMoney(availableToUse, state.settings.hiddenValues)}</strong>
       </div>
       <div className="monthly-overview-grid">
@@ -117,7 +119,6 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
         <span><small>Saídas</small><strong className="expense">{hideableMoney(totals.expense, state.settings.hiddenValues)}</strong></span>
         <span><small>Resultado</small><strong className={result < 0 ? "expense" : "income"}>{result > 0 ? "+" : ""}{hideableMoney(result, state.settings.hiddenValues)}</strong></span>
       </div>
-      <p className="available-note"><Icon name="info" size={15} /> Poupança, investimentos, metas e limite do cartão não entram no disponível.</p>
     </section>
 
     {pendingCount > 0 && <button className="pending-review-card" onClick={onReviewPending}>
@@ -215,7 +216,27 @@ function PlanView({ state, month, onModal }: { state: AppState; month: string; o
   </main>;
 }
 
-function AnalysisView({ state, month }: { state: AppState; month: string }) {
+function ComparisonChart({ state, month, kind, count, onCount }: { state: AppState; month: string; kind: "income" | "expense"; count: number; onCount: (count: number) => void }) {
+  const [selectedIndex, setSelectedIndex] = useState(Math.max(0, count - 1));
+  const [year, monthNumber] = month.split("-").map(Number);
+  const series = Array.from({ length: count }, (_, index) => {
+    const date = new Date(year, monthNumber - 1 - (count - 1 - index), 1, 12);
+    const key = localISODate(date).slice(0, 7);
+    const totals = monthTotals(state.transactions, key);
+    return { key, label: new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(date).replace(".", ""), value: kind === "income" ? totals.income : totals.expense };
+  });
+  useEffect(() => setSelectedIndex(Math.max(0, count - 1)), [count, month]);
+  const maximum = Math.max(...series.map((item) => item.value), 1);
+  const selected = series[Math.min(selectedIndex, series.length - 1)];
+  return <section className={"chart-card multi-month-card " + kind}>
+    <div className="comparison-heading"><div><span className="eyebrow">{kind === "income" ? "COMPARAÇÃO DE ENTRADAS" : "COMPARAÇÃO DE SAÍDAS"}</span><h2>{selected ? monthLabel(selected.key) : monthLabel(month)}</h2></div><select value={count} onChange={(event) => onCount(Number(event.target.value))} aria-label={"Período da comparação de " + (kind === "income" ? "entradas" : "saídas")}>{[2, 3, 6, 12].map((value) => <option value={value} key={value}>Últimos {value} meses</option>)}</select></div>
+    <div className="comparison-selected-value"><small>{selected?.label}</small><strong className={kind}>{hideableMoney(selected?.value || 0, state.settings.hiddenValues)}</strong></div>
+    <div className="multi-month-bars" style={{ "--bar-count": count } as CSSProperties}>{series.map((item, index) => <button type="button" key={item.key} className={selectedIndex === index ? "active" : ""} onClick={() => setSelectedIndex(index)} aria-label={monthLabel(item.key) + ": " + money.format(item.value)}><span><i style={{ height: Math.max(item.value ? 8 : 3, item.value / maximum * 100) + "%" }} /></span><small>{item.label}</small></button>)}</div>
+    <p>Toque em uma barra para ver o valor daquele mês.</p>
+  </section>;
+}
+
+function AnalysisView({ state, month, onComparisonMonths }: { state: AppState; month: string; onComparisonMonths: (kind: "income" | "expense", count: number) => void }) {
   const items = categoryTotals(state, month);
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   let cursor = 0;
@@ -224,11 +245,6 @@ function AnalysisView({ state, month }: { state: AppState; month: string }) {
     cursor += total ? item.amount / total * 100 : 0;
     return `${toneColor[item.category?.tone || "slate"]} ${start}% ${cursor}%`;
   }).join(", ") : "#e8ece8 0 100%";
-  const current = monthTotals(state.transactions, month);
-  const selectedDate = new Date(month + "-01T12:00:00");
-  selectedDate.setMonth(selectedDate.getMonth() - 1);
-  const prior = monthTotals(state.transactions, localISODate(selectedDate).slice(0, 7));
-  const maxBar = Math.max(current.expense, prior.expense, 1);
   const diagnostics = buildDiagnostics(state, month);
   return <main className="page">
     <div className="page-title"><div><span className="eyebrow">ANÁLISE</span><h1>Entenda seu comportamento</h1></div></div>
@@ -240,14 +256,15 @@ function AnalysisView({ state, month }: { state: AppState; month: string }) {
         return <div className="category-line" key={item.categoryId}><div><span className="category-dot" style={{ background: toneColor[item.category?.tone || "slate"] }} /><strong>{item.category?.name || "Outros"}</strong><span>{share}%</span><b>{hideableMoney(item.amount, state.settings.hiddenValues)}</b></div><div className="thin-track"><i style={{ width: share + "%", background: toneColor[item.category?.tone || "slate"] }} /></div></div>;
       })}{!items.length && <EmptyState icon="chart" title="Ainda sem gráfico" text="As despesas deste mês aparecerão aqui por categoria." />}</div>
     </section>
-    <section className="chart-card comparison-card"><span className="eyebrow">COMPARAÇÃO DE SAÍDAS</span><div className="bar-row"><span>Mês anterior</span><div><i style={{ width: prior.expense / maxBar * 100 + "%" }} /></div><strong>{hideableMoney(prior.expense, state.settings.hiddenValues)}</strong></div><div className="bar-row current"><span>Mês atual</span><div><i style={{ width: current.expense / maxBar * 100 + "%" }} /></div><strong>{hideableMoney(current.expense, state.settings.hiddenValues)}</strong></div></section>
+    <ComparisonChart state={state} month={month} kind="income" count={state.settings.incomeComparisonMonths} onCount={(count) => onComparisonMonths("income", count)} />
+    <ComparisonChart state={state} month={month} kind="expense" count={state.settings.expenseComparisonMonths} onCount={(count) => onComparisonMonths("expense", count)} />
     {state.settings.diagnosticsEnabled && <section className="diagnostics-section"><div className="section-heading"><div><span className="eyebrow">LEITURA DO SEU MÊS</span><h2>Dicas e avisos personalizados</h2></div><span className="no-ai-badge">Sem IA</span></div>{diagnostics.map((diagnostic) => <div className={"diagnostic-list-item " + diagnostic.tone} key={diagnostic.id}><span><Icon name={diagnostic.icon as IconName} /></span><div><small>{diagnostic.tone === "warning" ? "AVISO" : diagnostic.tone === "positive" ? "BOA NOTÍCIA" : "DICA"}</small><strong>{diagnostic.title}</strong><p>{diagnostic.message}</p></div></div>)}</section>}
   </main>;
 }
 
 function BottomNav({ active, onChange, onAdd }: { active: Tab; onChange: (tab: Tab) => void; onAdd: () => void }) {
   const item = (tab: Tab, icon: IconName, label: string) => <button className={active === tab ? "active" : ""} onClick={() => onChange(tab)}><Icon name={icon} size={21} /><span>{label}</span></button>;
-  return <nav className="bottom-nav">{item("home", "home", "Início")}{item("transactions", "receipt", "Extrato")}<button className="add-button" onClick={onAdd} aria-label="Adicionar lançamento"><Icon name="plus" size={28} /></button>{item("plan", "target", "Planejar")}{item("analysis", "chart", "Análise")}</nav>;
+  return <nav className="bottom-nav">{item("home", "home", "Início")}{item("transactions", "receipt", "Extrato")}<button className="add-button" onClick={onAdd} aria-label="Adicionar lançamento"><Icon name="plus" size={22} /></button>{item("plan", "target", "Planejar")}{item("analysis", "chart", "Análise")}</nav>;
 }
 
 function Sheet({ title, subtitle, onClose, children, wide = false }: { title: string; subtitle?: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
@@ -535,6 +552,10 @@ function ColorSetting({ label, description, value, presets, onChange }: { label:
 
 function EmptyState({ icon, title, text }: { icon: IconName; title: string; text: string }) { return <div className="empty-state"><span><Icon name={icon} /></span><strong>{title}</strong><p>{text}</p></div>; }
 
+function InfoSheet({ type, onClose }: { type: "demo" | "available"; onClose: () => void }) {
+  return <Sheet title={type === "demo" ? "Dados de demonstração" : "Valor disponível"} onClose={onClose}><div className="info-sheet-content"><span><Icon name="info" size={25} /></span>{type === "demo" ? <><strong>Estes valores são apenas exemplos.</strong><p>Eles existem para você explorar as telas e funções antes de registrar seus próprios dados. Quando quiser começar, abra Ajustes e escolha “Começar com o app vazio”.</p></> : <><strong>Este é o dinheiro livre nas contas de uso diário.</strong><p>Poupança, investimentos, valores separados em metas e limite do cartão não entram nesse cálculo. Assim, o app evita mostrar como disponível um dinheiro que já possui outro destino.</p></>}</div></Sheet>;
+}
+
 export default function App() {
   const [state, setState] = useState<AppState>(initialState);
   const [hydrated, setHydrated] = useState(false);
@@ -575,11 +596,11 @@ export default function App() {
 
   if (!hydrated) return <div className="splash"><span className="brand-mark"><PigMark /></span><strong>Meu Dinheiro</strong><small>Organizando seu app…</small></div>;
   return <div className="app-shell" style={{ "--income-color": state.settings.incomeColor, "--expense-color": state.settings.expenseColor } as CSSProperties}>
-    <AppHeader state={state} onSettings={() => setModal({ type: "settings" })} onToggleValues={() => setState((current) => ({ ...current, settings: { ...current.settings, hiddenValues: !current.settings.hiddenValues } }))} />
+    <AppHeader state={state} onSettings={() => setModal({ type: "settings" })} onDemoInfo={() => setModal({ type: "demoInfo" })} onToggleValues={() => setState((current) => ({ ...current, settings: { ...current.settings, hiddenValues: !current.settings.hiddenValues } }))} />
     {tab === "home" && <HomeView state={state} month={month} setMonth={setMonth} onModal={setModal} onTab={setTab} onReviewPending={() => { const latestPending = state.transactions.filter((item) => item.needsReview).sort((a, b) => b.date.localeCompare(a.date))[0]; if (latestPending) setMonth(latestPending.date.slice(0, 7)); setReviewPending(true); setTab("transactions"); }} />}
     {tab === "transactions" && <TransactionsView state={state} month={month} setMonth={setMonth} reviewPending={reviewPending} onEdit={(transaction) => setModal({ type: "transaction", kind: transaction.kind, transaction })} />}
     {tab === "plan" && <PlanView state={state} month={month} onModal={setModal} />}
-    {tab === "analysis" && <AnalysisView state={state} month={month} />}
+    {tab === "analysis" && <AnalysisView state={state} month={month} onComparisonMonths={(kind, count) => setState((current) => ({ ...current, settings: { ...current.settings, [kind === "income" ? "incomeComparisonMonths" : "expenseComparisonMonths"]: count } }))} />}
     <BottomNav active={tab} onChange={(next) => { if (next === "transactions") setReviewPending(false); setTab(next); }} onAdd={() => setModal({ type: "transaction", kind: "expense" })} />
     {modal?.type === "transaction" && <TransactionSheet state={state} kind={modal.kind} existing={modal.transaction} onClose={() => setModal(null)} onSave={saveTransactions} onDelete={deleteTransaction} />}
     {modal?.type === "import" && <ImportSheet state={state} onClose={() => setModal(null)} onImport={importTransactions} />}
@@ -588,5 +609,7 @@ export default function App() {
     {modal?.type === "account" && <AccountSheet state={state} account={modal.account} onClose={() => setModal(null)} onSave={(account) => setAndClose("accounts", account, account.id)} onDelete={(account) => { setState((current) => ({ ...current, accounts: current.accounts.filter((item) => item.id !== account.id) })); setModal(null); }} />}
     {modal?.type === "budget" && <BudgetSheet state={state} budget={modal.budget} onClose={() => setModal(null)} onSave={(budget) => setAndClose("budgets", budget, budget.id)} onDelete={(id) => { setState((current) => ({ ...current, budgets: current.budgets.filter((item) => item.id !== id) })); setModal(null); }} />}
     {modal?.type === "goal" && <GoalSheet goal={modal.goal} onClose={() => setModal(null)} onSave={(goal) => setAndClose("goals", goal, goal.id)} onDelete={(id) => { setState((current) => ({ ...current, goals: current.goals.filter((item) => item.id !== id) })); setModal(null); }} />}
+    {modal?.type === "demoInfo" && <InfoSheet type="demo" onClose={() => setModal(null)} />}
+    {modal?.type === "availableInfo" && <InfoSheet type="available" onClose={() => setModal(null)} />}
   </div>;
 }

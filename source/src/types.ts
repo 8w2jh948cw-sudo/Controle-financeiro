@@ -86,6 +86,8 @@ export type AppSettings = {
   energyExpectedMax: number;
   smallExpenseLimit: number;
   smallExpenseCount: number;
+  incomeComparisonMonths: number;
+  expenseComparisonMonths: number;
   theme: "light" | "dark" | "system";
   incomeColor: string;
   expenseColor: string;

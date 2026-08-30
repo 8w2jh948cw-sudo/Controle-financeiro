@@ -135,6 +135,8 @@ export const initialState: AppState = {
     energyExpectedMax: 270,
     smallExpenseLimit: 50,
     smallExpenseCount: 4,
+    incomeComparisonMonths: 3,
+    expenseComparisonMonths: 3,
     theme: "system",
     incomeColor: "#55b87a",
     expenseColor: "#ff7075",
