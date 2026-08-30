@@ -427,7 +427,13 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("home");
   const [month, setMonth] = useState(currentMonthKey());
   const [modal, setModal] = useState<Modal>(null);
-  useEffect(() => { loadState().then((stored) => { if (stored) setState({ ...stored, settings: { ...initialState.settings, ...stored.settings } }); setHydrated(true); }); }, []);
+  useEffect(() => { loadState().then((stored) => {
+    if (stored) {
+      const nextState = stored.demoMode && stored.version < initialState.version ? initialState : stored;
+      setState({ ...nextState, settings: { ...initialState.settings, ...nextState.settings } });
+    }
+    setHydrated(true);
+  }); }, []);
   useEffect(() => { if (!hydrated) return; const timer = setTimeout(() => void saveState(state), 250); return () => clearTimeout(timer); }, [state, hydrated]);
   useEffect(() => { document.body.classList.toggle("modal-open", !!modal); return () => document.body.classList.remove("modal-open"); }, [modal]);
   useEffect(() => {

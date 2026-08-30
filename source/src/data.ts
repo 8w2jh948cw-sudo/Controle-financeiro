@@ -24,11 +24,11 @@ export const categories: Category[] = [
 ];
 
 export const accounts: Account[] = [
-  { id: "nubank", name: "Nubank Conta", type: "checking", openingBalance: 4850.3, color: "violet" },
-  { id: "itau", name: "Itaú Uniclass", type: "checking", openingBalance: 8320, color: "orange" },
-  { id: "inter", name: "Inter Investimentos", type: "investment", openingBalance: 24500, color: "yellow" },
-  { id: "cash", name: "Dinheiro físico", type: "cash", openingBalance: 280, color: "green" },
-  { id: "card-nubank", name: "Nubank Ultravioleta", type: "credit", openingBalance: 0, creditLimit: 12000, color: "violet" },
+  { id: "nubank", name: "Nubank Conta", type: "checking", openingBalance: 120.4, color: "violet" },
+  { id: "itau", name: "Conta secundária", type: "checking", openingBalance: 86.2, color: "orange" },
+  { id: "inter", name: "Dinheiro guardado", type: "investment", openingBalance: 720, color: "yellow" },
+  { id: "cash", name: "Dinheiro físico", type: "cash", openingBalance: 70, color: "green" },
+  { id: "card-nubank", name: "Cartão principal", type: "credit", openingBalance: 0, creditLimit: 2800, color: "violet" },
 ];
 
 export const rules: CategoryRule[] = [
@@ -77,37 +77,37 @@ const tx = (
 });
 
 export const transactions: Transaction[] = [
-  tx("t-1", "expense", "Supermercado Pão de Açúcar", 342.5, offsetDate(-1), "market", "card-nubank", "credit", "18:42"),
-  tx("t-2", "expense", "Uber Viagem", 28.9, offsetDate(-1), "transport", "card-nubank", "credit", "15:10"),
-  tx("t-3", "income", "Projeto Freelance UX/UI", 3200, offsetDate(-4), "salary", "nubank", "pix", "09:30"),
-  tx("t-4", "expense", "Aluguel e Condomínio", 2150, offsetDate(-6), "housing", "nubank", "pix", "08:15"),
-  tx("t-5", "expense", "Jantar Restaurante", 198, offsetDate(-7), "food", "card-nubank", "credit", "21:05"),
-  tx("t-6", "expense", "Netflix", 44.9, offsetDate(-10), "subscriptions", "card-nubank", "credit", "06:00"),
-  tx("t-7", "expense", "Reposição materiais", 125.06, offsetDate(-11), "nails", "nubank", "pix", "14:25"),
-  tx("t-8", "income", "Atendimentos da semana", 8145.2, offsetDate(-13), "salary", "itau", "pix", "19:00"),
-  tx("t-9", "expense", "Mercado do mês", 444.61, offsetDate(-34), "market", "card-nubank", "credit", "17:20"),
-  tx("t-10", "expense", "Aluguel e Condomínio", 2150, offsetDate(-37), "housing", "nubank", "pix", "08:10"),
-  tx("t-11", "expense", "Plano de saúde", 361.79, offsetDate(-40), "health", "nubank", "debit", "07:45"),
-  tx("t-12", "income", "Atendimentos do mês", 9840, offsetDate(-44), "salary", "itau", "pix", "18:30"),
+  tx("t-1", "expense", "Supermercado do mês", 296.4, offsetDate(-1), "market", "card-nubank", "credit", "18:42"),
+  tx("t-2", "expense", "Transporte para atendimento", 34.8, offsetDate(-1), "transport", "card-nubank", "credit", "15:10"),
+  tx("t-3", "income", "Vendas do minicurso", 394, offsetDate(-4), "salary", "nubank", "pix", "09:30"),
+  tx("t-4", "expense", "Aluguel", 1684, offsetDate(-6), "housing", "nubank", "pix", "08:15"),
+  tx("t-5", "expense", "Lanche após atendimento", 68.4, offsetDate(-7), "food", "card-nubank", "credit", "21:05"),
+  tx("t-6", "expense", "Conta de energia", 243.7, offsetDate(-10), "housing", "nubank", "pix", "10:20"),
+  tx("t-7", "expense", "Reposição de gel e lixas", 214.9, offsetDate(-11), "nails", "nubank", "pix", "14:25"),
+  tx("t-8", "income", "Atendimentos de unhas", 3780, offsetDate(-13), "salary", "nubank", "pix", "19:00"),
+  tx("t-9", "expense", "Mercado do mês", 352.8, offsetDate(-34), "market", "card-nubank", "credit", "17:20"),
+  tx("t-10", "expense", "Aluguel", 1684, offsetDate(-37), "housing", "nubank", "pix", "08:10"),
+  tx("t-11", "expense", "Conta de energia", 256.3, offsetDate(-40), "housing", "nubank", "pix", "10:05"),
+  tx("t-12", "income", "Atendimentos de unhas", 4200, offsetDate(-44), "salary", "itau", "pix", "18:30"),
 ];
 
 export const budgets: Budget[] = [
-  { id: "b-1", categoryId: "housing", limit: 2600 },
-  { id: "b-2", categoryId: "market", limit: 1200 },
-  { id: "b-3", categoryId: "food", limit: 800 },
-  { id: "b-4", categoryId: "transport", limit: 650 },
-  { id: "b-5", categoryId: "leisure", limit: 500 },
-  { id: "b-6", categoryId: "nails", limit: 600 },
+  { id: "b-1", categoryId: "housing", limit: 2150 },
+  { id: "b-2", categoryId: "market", limit: 700 },
+  { id: "b-3", categoryId: "food", limit: 350 },
+  { id: "b-4", categoryId: "transport", limit: 250 },
+  { id: "b-5", categoryId: "leisure", limit: 200 },
+  { id: "b-6", categoryId: "nails", limit: 400 },
 ];
 
 export const goals: Goal[] = [
-  { id: "g-1", name: "Reserva de emergência", current: 22500, target: 30000 },
-  { id: "g-2", name: "Curso de decoração", current: 2350, target: 5000 },
-  { id: "g-3", name: "Novo equipamento", current: 780, target: 2400 },
+  { id: "g-1", name: "Reserva de emergência", current: 720, target: 6000 },
+  { id: "g-2", name: "Curso de decoração", current: 180, target: 1500 },
+  { id: "g-3", name: "Novo equipamento", current: 260, target: 2200 },
 ];
 
 export const initialState: AppState = {
-  version: 1,
+  version: 2,
   demoMode: true,
   transactions,
   accounts,
