@@ -1,4 +1,4 @@
-const CACHE = "meu-dinheiro-inteligente-v12";
+const CACHE = "meu-dinheiro-inteligente-v13";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (event) => {

@@ -299,7 +299,7 @@ function AnalysisView({ state, month, onComparisonMonths }: { state: AppState; m
 function BottomNav({ active, settings, onChange, onAdd }: { active: Tab; settings: AppState["settings"]; onChange: (tab: Tab) => void; onAdd: () => void }) {
   const iconSize = settings.navCustomEnabled ? settings.navIconSize : 21;
   const item = (tab: Tab, icon: IconName, label: string) => <button className={`nav-tab ${active === tab ? "active" : ""}`} onClick={() => onChange(tab)}><Icon name={icon} size={iconSize} /><span>{label}</span></button>;
-  return <nav className={`bottom-nav ${settings.navCustomEnabled ? "custom-nav" : ""} ${settings.navShowLabels || !settings.navCustomEnabled ? "" : "labels-hidden"} shadow-${settings.navCustomEnabled ? settings.navShadow : "soft"}`} style={navVariables(settings)}>{item("home", "homeTab", "Início")}{item("transactions", "receiptTab", "Extrato")}<button className="add-button" onClick={onAdd} aria-label="Adicionar lançamento"><Icon name="plusTab" size={settings.navCustomEnabled ? Math.max(20, settings.navIconSize - 2) : 22} /></button>{item("plan", "planTab", "Planejar")}{item("analysis", "analysisTab", "Análise")}</nav>;
+  return <nav className={`bottom-nav ${settings.navCustomEnabled ? "custom-nav" : ""} ${settings.navShowLabels || !settings.navCustomEnabled ? "" : "labels-hidden"} shadow-${settings.navCustomEnabled ? settings.navShadow : "soft"}`} style={navVariables(settings)}>{item("home", "homeTab", "Início")}{item("transactions", "receiptTab", "Extrato")}<button className="add-button" onClick={onAdd} aria-label="Adicionar lançamento"><Icon name="plusTab" size={settings.navCustomEnabled ? Math.max(20, settings.navIconSize - 2) : 22} /></button>{item("plan", "planTab", "Planejar")}{item("analysis", "analysisPieTab", "Análise")}</nav>;
 }
 
 function Sheet({ title, subtitle, onClose, children, wide = false }: { title: string; subtitle?: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
@@ -590,7 +590,7 @@ function NavLabPreview({ settings }: { settings: AppState["settings"] }) {
   const iconSize = settings.navIconSize;
   const previewSettings = { ...settings, navCustomEnabled: true };
   const item = (icon: IconName, label: string, active = false) => <button type="button" className={`nav-tab ${active ? "active" : ""}`}><Icon name={icon} size={iconSize} /><span>{label}</span></button>;
-  return <div className="nav-lab-preview-stage"><span className="eyebrow">PRÉVIA AO VIVO</span><nav className={`nav-lab-preview custom-nav ${settings.navShowLabels ? "" : "labels-hidden"} shadow-${settings.navShadow}`} style={navVariables(previewSettings)}>{item("homeTab", "Início", true)}{item("receiptTab", "Extrato")}<button type="button" className="add-button" aria-label="Adicionar"><Icon name="plusTab" size={Math.max(20, iconSize - 2)} /></button>{item("planTab", "Planejar")}{item("analysisTab", "Análise")}</nav></div>;
+  return <div className="nav-lab-preview-stage"><span className="eyebrow">PRÉVIA AO VIVO</span><nav className={`nav-lab-preview custom-nav ${settings.navShowLabels ? "" : "labels-hidden"} shadow-${settings.navShadow}`} style={navVariables(previewSettings)}>{item("homeTab", "Início", true)}{item("receiptTab", "Extrato")}<button type="button" className="add-button" aria-label="Adicionar"><Icon name="plusTab" size={Math.max(20, iconSize - 2)} /></button>{item("planTab", "Planejar")}{item("analysisPieTab", "Análise")}</nav></div>;
 }
 
 function NavLabSheet({ state, onClose, onState }: { state: AppState; onClose: () => void; onState: (state: AppState) => void }) {
