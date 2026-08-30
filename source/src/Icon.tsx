@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export type IconName =
-  | "home" | "receipt" | "plus" | "target" | "chart" | "analysisTab" | "eye" | "eyeOff"
+  | "home" | "receipt" | "plus" | "target" | "chart" | "homeTab" | "receiptTab" | "plusTab" | "planTab" | "analysisTab" | "eye" | "eyeOff"
   | "settings" | "arrowUp" | "arrowDown" | "import" | "transfer" | "sparkles"
   | "wallet" | "card" | "bank" | "search" | "close" | "check" | "edit"
   | "trash" | "chevron" | "food" | "basket" | "car" | "heart" | "smile"
@@ -10,6 +10,10 @@ export type IconName =
   | "clock" | "filter" | "more";
 
 export function Icon({ name, size = 22, stroke = 2 }: { name: IconName; size?: number; stroke?: number }) {
+  if (name === "homeTab") return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" /><path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" /></svg>;
+  if (name === "receiptTab") return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M14 3v4a1 1 0 0 0 1 1h4" /><path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /><path d="M9 17h6" /><path d="M9 13h6" /></svg>;
+  if (name === "plusTab") return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>;
+  if (name === "planTab") return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7.904 17.563a1.2 1.2 0 0 0 2.228 .308l2.09 -3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047 -1.047a1.067 1.067 0 0 0 0 -1.509l-4.907 -4.907l3.113 -2.09a1.2 1.2 0 0 0 -.309 -2.228l-13.582 -3.904l3.904 13.563" /></svg>;
   if (name === "analysisTab") return <svg viewBox="0 0 75.517578125 70.619140625" width={size} height={size} fill="currentColor" stroke="none" aria-hidden="true">
     <g fillRule="nonzero" transform="scale(1,-1) translate(0,-70.619140625)"><path d="M 9.41015625,20.32421875 L 9.41015625,34.181640625 Q 9.41015625,35.27734375 10.076171875,35.921875 Q 10.7421875,36.56640625 11.90234375,36.56640625 L 18.60546875,36.56640625 Q 19.72265625,36.56640625 20.3994140625,35.921875 Q 21.076171875,35.27734375 21.076171875,34.181640625 L 21.076171875,20.32421875 Q 21.076171875,19.20703125 20.3994140625,18.583984375 Q 19.72265625,17.9609375 18.60546875,17.9609375 L 11.90234375,17.9609375 Q 10.7421875,17.9609375 10.076171875,18.583984375 Q 9.41015625,19.20703125 9.41015625,20.32421875 Z M 24.40625,20.32421875 L 24.40625,42.23828125 Q 24.40625,43.3125 25.072265625,43.95703125 Q 25.73828125,44.6015625 26.876953125,44.6015625 L 33.580078125,44.6015625 Q 34.71875,44.6015625 35.3955078125,43.95703125 Q 36.072265625,43.3125 36.072265625,42.23828125 L 36.072265625,20.32421875 Q 36.072265625,19.20703125 35.3955078125,18.583984375 Q 34.71875,17.9609375 33.580078125,17.9609375 L 26.876953125,17.9609375 Q 25.73828125,17.9609375 25.072265625,18.583984375 Q 24.40625,19.20703125 24.40625,20.32421875 Z M 39.423828125,20.32421875 L 39.423828125,50.294921875 Q 39.423828125,51.412109375 40.1005859375,52.0458984375 Q 40.77734375,52.6796875 41.916015625,52.6796875 L 48.59765625,52.6796875 Q 49.736328125,52.6796875 50.4130859375,52.0458984375 Q 51.08984375,51.412109375 51.08984375,50.294921875 L 51.08984375,20.32421875 Q 51.08984375,19.20703125 50.4130859375,18.583984375 Q 49.736328125,17.9609375 48.59765625,17.9609375 L 41.916015625,17.9609375 Q 40.77734375,17.9609375 40.1005859375,18.583984375 Q 39.423828125,19.20703125 39.423828125,20.32421875 Z M 54.44140625,20.32421875 L 54.44140625,58.3515625 Q 54.44140625,59.447265625 55.1181640625,60.0810546875 Q 55.794921875,60.71484375 56.912109375,60.71484375 L 63.615234375,60.71484375 Q 64.75390625,60.71484375 65.4306640625,60.0810546875 Q 66.107421875,59.447265625 66.107421875,58.3515625 L 66.107421875,20.32421875 Q 66.107421875,19.20703125 65.4306640625,18.583984375 Q 64.75390625,17.9609375 63.615234375,17.9609375 L 56.912109375,17.9609375 Q 55.794921875,17.9609375 55.1181640625,18.583984375 Q 54.44140625,19.20703125 54.44140625,20.32421875 Z M 8.98046875,9.904296875 Q 8.20703125,9.904296875 7.6376953125,10.4521484375 Q 7.068359375,11 7.068359375,11.794921875 Q 7.068359375,12.58984375 7.6376953125,13.1376953125 Q 8.20703125,13.685546875 8.98046875,13.685546875 L 66.537109375,13.685546875 Q 67.310546875,13.685546875 67.8798828125,13.1376953125 Q 68.44921875,12.58984375 68.44921875,11.794921875 Q 68.44921875,11 67.8798828125,10.4521484375 Q 67.310546875,9.904296875 66.537109375,9.904296875 Z" /></g>
   </svg>;
@@ -19,6 +23,10 @@ export function Icon({ name, size = 22, stroke = 2 }: { name: IconName; size?: n
     plus: <path d="M12 5v14M5 12h14"/>,
     target: <><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></>,
     chart: <><path d="M4 19V9M10 19V5M16 19v-7M22 19V3"/></>,
+    homeTab: null,
+    receiptTab: null,
+    plusTab: null,
+    planTab: null,
     analysisTab: null,
     eye: <><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></>,
     eyeOff: <><path d="M3 3l18 18M10.6 6.2A10.5 10.5 0 0 1 12 6c6.5 0 10 6 10 6a17.6 17.6 0 0 1-2.2 3M6.6 6.6C3.7 8.4 2 12 2 12s3.5 6 10 6c1 0 2-.2 2.8-.5M9.8 9.8a3 3 0 0 0 4.4 4.4"/></>,
