@@ -23,6 +23,9 @@ export type Transaction = {
   id: string;
   kind: TransactionKind;
   description: string;
+  place?: string;
+  originalDescription?: string;
+  needsReview?: boolean;
   amount: number;
   date: string;
   time: string;
@@ -58,6 +61,9 @@ export type CategoryRule = {
   id: string;
   keyword: string;
   categoryId: string;
+  place?: string;
+  title?: string;
+  matchMode?: "contains" | "startsWith" | "exact" | "simplified";
 };
 
 export type AppSettings = {
@@ -103,6 +109,13 @@ export type ImportCandidate = {
   duplicate: boolean;
   kind: "expense" | "income";
   description: string;
+  place: string;
+  originalDescription: string;
+  needsReview: boolean;
+  confidence: "certain" | "suggested" | "unknown";
+  titleSuggestions: string[];
+  rememberRule: boolean;
+  pattern: string;
   amount: number;
   date: string;
   time: string;

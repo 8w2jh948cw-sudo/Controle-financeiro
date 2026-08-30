@@ -6,6 +6,30 @@ const normalize = (value: string) => value
   .toLowerCase()
   .trim();
 
+export const isPlaceholderTitle = (value: string) => /^(compra|pagamento|entrada|movimenta[cç][aã]o) (n[aã]o detalhad[ao]|importad[ao])$/i.test(value.trim());
+
+export const simplifyBankText = (value: string) => normalize(value)
+  .replace(/\b(compra|pagamento|pgto|cartao|credito|debito|pix|recebido|enviado|transferencia|transf)\b/g, " ")
+  .replace(/\d+/g, " ")
+  .replace(/[^a-z]+/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+
+const titleCase = (value: string) => value.toLowerCase().replace(/(^|\s)([a-záàâãéèêíïóôõöúç])/g, (_, space, letter) => space + letter.toUpperCase());
+
+export const cleanBankPlace = (value: string) => {
+  const cleaned = value
+    .replace(/[ *_]+/g, " ")
+    .replace(/\b(compra|pagamento|pgto|cart[aã]o|cr[eé]dito|d[eé]bito|pix recebido|pix enviado|transfer[eê]ncia)\b/gi, " ")
+    .replace(/\b\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?\b/g, " ")
+    .replace(/\b\d{4,}\b/g, " ")
+    .replace(/\d+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return "Local não identificado";
+  return titleCase(cleaned).slice(0, 70);
+};
+
 const cleanHeader = (value: string) => normalize(value).replace(/[^a-z0-9]/g, "");
 
 export const parseMoney = (raw: string | number): number => {
@@ -45,10 +69,46 @@ export const normalizeDate = (raw: string): { date: string; time: string } => {
   return { date: new Date().toISOString().slice(0, 10), time: "12:00" };
 };
 
-export const suggestCategory = (description: string, rules: CategoryRule[], fallback = "other") => {
-  const normalized = normalize(description);
-  const match = rules.find((rule) => normalized.includes(normalize(rule.keyword)));
-  return match?.categoryId ?? fallback;
+const ruleMatches = (description: string, rule: CategoryRule) => {
+  const value = normalize(description);
+  const keyword = normalize(rule.keyword);
+  if (rule.matchMode === "exact") return value === keyword;
+  if (rule.matchMode === "startsWith") return value.startsWith(keyword);
+  if (rule.matchMode === "simplified") {
+    const simplifiedKeyword = simplifyBankText(rule.keyword);
+    return !!simplifiedKeyword && simplifyBankText(description).includes(simplifiedKeyword);
+  }
+  return value.includes(keyword);
+};
+
+export const findImportRule = (description: string, rules: CategoryRule[]) => rules.find((rule) => ruleMatches(description, rule));
+
+export const suggestCategory = (description: string, rules: CategoryRule[], fallback = "other") =>
+  findImportRule(description, rules)?.categoryId ?? fallback;
+
+const importDetails = (originalDescription: string, kind: "expense" | "income", state: AppState) => {
+  const rule = findImportRule(originalDescription, state.rules);
+  const place = rule?.place?.trim() || cleanBankPlace(originalDescription);
+  const titleSuggestions = state.transactions
+    .filter((transaction) => transaction.place && normalize(transaction.place) === normalize(place))
+    .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
+    .map((transaction) => transaction.description)
+    .filter((title, index, list) => !isPlaceholderTitle(title) && list.indexOf(title) === index)
+    .slice(0, 3);
+  const description = rule?.title?.trim() || titleSuggestions[0] || (kind === "expense" ? "Compra não detalhada" : "Entrada não detalhada");
+  const categoryId = rule?.categoryId || "other";
+  const confidence = rule?.title && categoryId !== "other" ? "certain" as const : titleSuggestions.length ? "suggested" as const : "unknown" as const;
+  return {
+    description,
+    place,
+    categoryId,
+    confidence,
+    titleSuggestions,
+    needsReview: confidence !== "certain" || categoryId === "other" || isPlaceholderTitle(description),
+    originalDescription,
+    rememberRule: false,
+    pattern: simplifyBankText(originalDescription),
+  };
 };
 
 export const makeFingerprint = (date: string, amount: number, description: string, accountId: string) =>
@@ -111,24 +171,24 @@ const parseCSV = (content: string, state: AppState, accountId: string): ImportCa
     const rawDate = cells[dateIndex >= 0 ? dateIndex : 0] || "";
     const normalizedDate = normalizeDate(rawDate);
     if (timeIndex >= 0 && cells[timeIndex]) normalizedDate.time = cells[timeIndex].slice(0, 5);
-    const description = cells[descriptionIndex >= 0 ? descriptionIndex : 1] || "Movimentação importada";
+    const originalDescription = cells[descriptionIndex >= 0 ? descriptionIndex : 1] || "Movimentação importada";
     let signedAmount = amountIndex >= 0 ? parseMoney(cells[amountIndex]) : 0;
     if (!signedAmount && debitIndex >= 0) signedAmount = -Math.abs(parseMoney(cells[debitIndex]));
     if (!signedAmount && creditIndex >= 0) signedAmount = Math.abs(parseMoney(cells[creditIndex]));
     const type = typeIndex >= 0 ? normalize(cells[typeIndex]) : "";
     const kind = signedAmount < 0 || /debito|saida|despesa/.test(type) ? "expense" as const : "income" as const;
     const amount = Math.abs(signedAmount);
-    const fingerprint = makeFingerprint(normalizedDate.date, amount, description, accountId);
+    const fingerprint = makeFingerprint(normalizedDate.date, amount, originalDescription, accountId);
+    const details = importDetails(originalDescription, kind, state);
     return {
       tempId: "csv-" + index + "-" + Date.now(),
       selected: amount > 0 && !existing.has(fingerprint),
       duplicate: existing.has(fingerprint),
       kind,
-      description: description.trim(),
+      ...details,
       amount,
       date: normalizedDate.date,
       time: normalizedDate.time,
-      categoryId: suggestCategory(description, state.rules),
       accountId,
       source: "csv" as const,
       fingerprint,
@@ -148,19 +208,20 @@ const parseOFX = (content: string, state: AppState, accountId: string): ImportCa
     const signedAmount = parseMoney(getOFXTag(block, "TRNAMT"));
     const rawDate = getOFXTag(block, "DTPOSTED") || getOFXTag(block, "DTUSER");
     const normalizedDate = normalizeDate(rawDate);
-    const description = getOFXTag(block, "MEMO") || getOFXTag(block, "NAME") || getOFXTag(block, "TRNTYPE") || "Movimentação importada";
+    const originalDescription = getOFXTag(block, "MEMO") || getOFXTag(block, "NAME") || getOFXTag(block, "TRNTYPE") || "Movimentação importada";
     const amount = Math.abs(signedAmount);
-    const fingerprint = makeFingerprint(normalizedDate.date, amount, description, accountId);
+    const kind = signedAmount < 0 ? "expense" as const : "income" as const;
+    const fingerprint = makeFingerprint(normalizedDate.date, amount, originalDescription, accountId);
+    const details = importDetails(originalDescription, kind, state);
     return {
       tempId: "ofx-" + index + "-" + Date.now(),
       selected: amount > 0 && !existing.has(fingerprint),
       duplicate: existing.has(fingerprint),
-      kind: signedAmount < 0 ? "expense" as const : "income" as const,
-      description,
+      kind,
+      ...details,
       amount,
       date: normalizedDate.date,
       time: normalizedDate.time,
-      categoryId: suggestCategory(description, state.rules),
       accountId,
       source: "ofx" as const,
       fingerprint,

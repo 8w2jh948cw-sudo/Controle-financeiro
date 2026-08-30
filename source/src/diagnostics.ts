@@ -151,6 +151,7 @@ export const buildDiagnostics = (state: AppState, selectedKey = currentMonthKey(
 
   if (settings.diagnosticCategoryTrends && previousCategories.size) {
     const strongest = [...currentCategories.entries()]
+      .filter(([categoryId]) => categoryId !== "other")
       .map(([categoryId, amount]) => ({ categoryId, amount, oldAmount: previousCategories.get(categoryId) || 0, change: percentChange(amount, previousCategories.get(categoryId) || 0) }))
       .filter((item) => item.oldAmount > 0 && Math.abs(item.change) >= threshold)
       .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))[0];
@@ -200,10 +201,13 @@ export const buildDiagnostics = (state: AppState, selectedKey = currentMonthKey(
   }
 
   if (current.expense > 0 && currentCategories.size) {
-    const [categoryId, amount] = [...currentCategories.entries()].sort((a, b) => b[1] - a[1])[0];
+    const topKnown = [...currentCategories.entries()].filter(([categoryId]) => categoryId !== "other").sort((a, b) => b[1] - a[1])[0];
+    if (topKnown) {
+      const [categoryId, amount] = topKnown;
     const category = state.categories.find((item) => item.id === categoryId);
     const share = Math.round(amount / current.expense * 100);
     add({ id: "top-category", title: (category?.name || "Uma categoria") + " concentra seus gastos", message: "Ela representa " + share + "% de todas as saídas registradas neste mês. Isso ajuda a entender para onde o dinheiro está indo.", tone: share >= 50 ? "warning" : "neutral", icon: category?.icon || "chart", priority: share >= 50 ? 80 : 52 });
+    }
   }
 
   const imported = state.transactions.filter((transaction) => transaction.source === "csv" || transaction.source === "ofx").length;
