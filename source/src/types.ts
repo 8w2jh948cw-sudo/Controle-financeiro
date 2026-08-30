@@ -91,6 +91,21 @@ export type AppSettings = {
   theme: "light" | "dark" | "system";
   incomeColor: string;
   expenseColor: string;
+  navCustomEnabled: boolean;
+  navShowLabels: boolean;
+  navIconSize: number;
+  navTextSize: number;
+  navHeight: number;
+  navCornerRadius: number;
+  navBorderWidth: number;
+  navSideInset: number;
+  navShadow: "none" | "soft" | "strong";
+  navBackgroundColor: string;
+  navBorderColor: string;
+  navInactiveColor: string;
+  navActiveBackgroundColor: string;
+  navActiveColor: string;
+  navAddBackgroundColor: string;
 };
 
 export type AppState = {

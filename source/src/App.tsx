@@ -12,6 +12,7 @@ type Modal =
   | { type: "transaction"; kind: TransactionKind; transaction?: Transaction }
   | { type: "import" }
   | { type: "settings" }
+  | { type: "navLab" }
   | { type: "rules" }
   | { type: "account"; account?: Account }
   | { type: "budget"; budget?: Budget }
@@ -45,6 +46,39 @@ const toneColor: Record<string, string> = {
   blue: "#1677ff", yellow: "#ffc94d", orange: "#ff9f43", violet: "#8358f5", green: "#42b883",
   pink: "#ef5da8", indigo: "#4e7fea", teal: "#19a99a", coral: "#ff6f73", emerald: "#28a96b", slate: "#7d8797",
 };
+const navDefaults = {
+  navCustomEnabled: false,
+  navShowLabels: true,
+  navIconSize: 27,
+  navTextSize: 9,
+  navHeight: 54,
+  navCornerRadius: 20,
+  navBorderWidth: 1,
+  navSideInset: 24,
+  navShadow: "soft" as const,
+  navBackgroundColor: "#ffffff",
+  navBorderColor: "#e3e8e4",
+  navInactiveColor: "#929a95",
+  navActiveBackgroundColor: "#eef5f0",
+  navActiveColor: "#0b4a34",
+  navAddBackgroundColor: "#0b4a34",
+};
+
+const navVariables = (settings: AppState["settings"]): CSSProperties => ({
+  "--nav-height": `${settings.navCustomEnabled ? settings.navHeight : 72}px`,
+  "--nav-radius": `${settings.navCustomEnabled ? settings.navCornerRadius : 24}px`,
+  "--nav-border-width": `${settings.navCustomEnabled ? settings.navBorderWidth : 1}px`,
+  "--nav-inset": `${settings.navCustomEnabled ? settings.navSideInset : 24}px`,
+  "--nav-text-size": `${settings.navCustomEnabled ? settings.navTextSize : 8.5}px`,
+  ...(settings.navCustomEnabled ? {
+    "--nav-bg": settings.navBackgroundColor,
+    "--nav-border-color": settings.navBorderColor,
+    "--nav-inactive": settings.navInactiveColor,
+    "--nav-active-bg": settings.navActiveBackgroundColor,
+    "--nav-active": settings.navActiveColor,
+    "--nav-add": settings.navAddBackgroundColor,
+  } : {}),
+} as CSSProperties);
 const mergeLearnedRules = (current: CategoryRule[], additions: CategoryRule[]) => additions.reduce((rules, addition) => {
   const key = simplifyBankText(addition.keyword) || addition.keyword.toLowerCase().trim();
   return [addition, ...rules.filter((rule) => (simplifyBankText(rule.keyword) || rule.keyword.toLowerCase().trim()) !== key)];
@@ -262,9 +296,10 @@ function AnalysisView({ state, month, onComparisonMonths }: { state: AppState; m
   </main>;
 }
 
-function BottomNav({ active, onChange, onAdd }: { active: Tab; onChange: (tab: Tab) => void; onAdd: () => void }) {
-  const item = (tab: Tab, icon: IconName, label: string) => <button className={active === tab ? "active" : ""} onClick={() => onChange(tab)}><Icon name={icon} size={21} /><span>{label}</span></button>;
-  return <nav className="bottom-nav">{item("home", "home", "Início")}{item("transactions", "receipt", "Extrato")}<button className="add-button" onClick={onAdd} aria-label="Adicionar lançamento"><Icon name="plus" size={22} /></button>{item("plan", "target", "Planejar")}{item("analysis", "chart", "Análise")}</nav>;
+function BottomNav({ active, settings, onChange, onAdd }: { active: Tab; settings: AppState["settings"]; onChange: (tab: Tab) => void; onAdd: () => void }) {
+  const iconSize = settings.navCustomEnabled ? settings.navIconSize : 21;
+  const item = (tab: Tab, icon: IconName, label: string) => <button className={`nav-tab ${active === tab ? "active" : ""}`} onClick={() => onChange(tab)}><Icon name={icon} size={iconSize} /><span>{label}</span></button>;
+  return <nav className={`bottom-nav ${settings.navCustomEnabled ? "custom-nav" : ""} ${settings.navShowLabels || !settings.navCustomEnabled ? "" : "labels-hidden"} shadow-${settings.navCustomEnabled ? settings.navShadow : "soft"}`} style={navVariables(settings)}>{item("home", "home", "Início")}{item("transactions", "receipt", "Extrato")}<button className="add-button" onClick={onAdd} aria-label="Adicionar lançamento"><Icon name="plus" size={settings.navCustomEnabled ? Math.max(20, settings.navIconSize - 2) : 22} /></button>{item("plan", "target", "Planejar")}{item("analysis", "chart", "Análise")}</nav>;
 }
 
 function Sheet({ title, subtitle, onClose, children, wide = false }: { title: string; subtitle?: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
@@ -433,7 +468,7 @@ function SettingToggle({ title, description, checked, onChange, compact = false 
   return <label className={"toggle-row " + (compact ? "compact-toggle" : "")}><span><strong>{title}</strong><small>{description}</small></span><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /></label>;
 }
 
-function SettingsSheet({ state, onClose, onState, onRules }: { state: AppState; onClose: () => void; onState: (state: AppState) => void; onRules: () => void }) {
+function SettingsSheet({ state, onClose, onState, onRules, onNavLab }: { state: AppState; onClose: () => void; onState: (state: AppState) => void; onRules: () => void; onNavLab: () => void }) {
   const [confirmReset, setConfirmReset] = useState<"demo" | "blank" | null>(null);
   const setSetting = <K extends keyof AppState["settings"]>(key: K, value: AppState["settings"][K]) => {
     onState({ ...state, settings: { ...state.settings, [key]: value } });
@@ -518,6 +553,10 @@ function SettingsSheet({ state, onClose, onState, onRules }: { state: AppState; 
           <p className="diagnostic-privacy"><Icon name="check" size={16} /> Tudo é calculado no seu aparelho. Nenhum valor é enviado para uma API.</p>
         </div>
       </details>}
+      <div className="settings-group">
+        <span className="eyebrow">LABORATÓRIO</span>
+        <button className="settings-button" onClick={onNavLab}><span className="settings-icon"><Icon name="sparkles" /></span><span><strong>Editor da barra inferior</strong><small>Prévia ao vivo, tamanhos, títulos, cores, borda e sombra.</small></span><Icon name="chevron" size={18} /></button>
+      </div>
       <button className="settings-button" onClick={onRules}><span className="settings-icon"><Icon name="rule" /></span><span><strong>Regras de importação</strong><small>Simplifique títulos, locais e categorias automaticamente.</small></span><Icon name="chevron" size={18} /></button>
 
       <div className="settings-group">
@@ -535,6 +574,55 @@ function SettingsSheet({ state, onClose, onState, onRules }: { state: AppState; 
         </>}
       </div>
       <div className="privacy-footer"><Icon name="check" /><p><strong>Seus dados ficam neste aparelho.</strong><br/>O app não envia seus valores para a OpenAI, bancos ou qualquer servidor.</p></div>
+    </div>
+  </Sheet>;
+}
+
+function NavNumberChoice({ label, description, value, options, suffix = "", onChange }: { label: string; description: string; value: number; options: number[]; suffix?: string; onChange: (value: number) => void }) {
+  return <div className="nav-lab-control"><span><strong>{label}</strong><small>{description}</small></span><div className="nav-choice-grid">{options.map((option) => <button type="button" key={option} className={value === option ? "active" : ""} onClick={() => onChange(option)}>{option}{suffix}</button>)}</div></div>;
+}
+
+function NavColorControl({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return <label className="nav-color-control"><span className="nav-color-dot" style={{ background: value }} /><strong>{label}</strong><input type="color" value={value} onChange={(event) => onChange(event.target.value)} aria-label={label} /></label>;
+}
+
+function NavLabPreview({ settings }: { settings: AppState["settings"] }) {
+  const iconSize = settings.navIconSize;
+  const previewSettings = { ...settings, navCustomEnabled: true };
+  const item = (icon: IconName, label: string, active = false) => <button type="button" className={`nav-tab ${active ? "active" : ""}`}><Icon name={icon} size={iconSize} /><span>{label}</span></button>;
+  return <div className="nav-lab-preview-stage"><span className="eyebrow">PRÉVIA AO VIVO</span><nav className={`nav-lab-preview custom-nav ${settings.navShowLabels ? "" : "labels-hidden"} shadow-${settings.navShadow}`} style={navVariables(previewSettings)}>{item("home", "Início", true)}{item("receipt", "Extrato")}<button type="button" className="add-button" aria-label="Adicionar"><Icon name="plus" size={Math.max(20, iconSize - 2)} /></button>{item("target", "Planejar")}{item("chart", "Análise")}</nav></div>;
+}
+
+function NavLabSheet({ state, onClose, onState }: { state: AppState; onClose: () => void; onState: (state: AppState) => void }) {
+  const setSetting = <K extends keyof AppState["settings"]>(key: K, value: AppState["settings"][K]) => onState({ ...state, settings: { ...state.settings, [key]: value } });
+  const reset = () => onState({ ...state, settings: { ...state.settings, ...navDefaults } });
+  return <Sheet title="Laboratório da barra" subtitle="Monte a navegação do seu jeito. As mudanças aparecem na prévia e são salvas automaticamente." onClose={onClose}>
+    <div className="nav-lab">
+      <NavLabPreview settings={state.settings} />
+      <SettingToggle title="Usar barra personalizada" description="Ativa as escolhas abaixo em todo o app." checked={state.settings.navCustomEnabled} onChange={(checked) => setSetting("navCustomEnabled", checked)} />
+      <SettingToggle title="Mostrar títulos" description="Ao ocultar, os ícones ficam centralizados na barra." checked={state.settings.navShowLabels} onChange={(checked) => setSetting("navShowLabels", checked)} />
+
+      <div className="nav-lab-section"><span className="eyebrow">TAMANHOS E FORMA</span>
+        <NavNumberChoice label="Tamanho dos ícones" description="O padrão do laboratório é 27 px." value={state.settings.navIconSize} options={[24, 27, 30, 33]} suffix=" px" onChange={(value) => setSetting("navIconSize", value)} />
+        <NavNumberChoice label="Tamanho dos títulos" description="Afeta somente os textos abaixo dos ícones." value={state.settings.navTextSize} options={[8, 9, 10, 11]} suffix=" px" onChange={(value) => setSetting("navTextSize", value)} />
+        <NavNumberChoice label="Altura da barra" description="54 px cria a versão fina que você preferiu." value={state.settings.navHeight} options={[54, 62, 70, 78]} suffix=" px" onChange={(value) => setSetting("navHeight", value)} />
+        <NavNumberChoice label="Arredondamento" description="De mais discreto a bem arredondado." value={state.settings.navCornerRadius} options={[14, 20, 26, 32]} suffix=" px" onChange={(value) => setSetting("navCornerRadius", value)} />
+        <NavNumberChoice label="Espaço nas laterais" description="Controla a largura visual da barra." value={state.settings.navSideInset} options={[16, 24, 32, 40]} suffix=" px" onChange={(value) => setSetting("navSideInset", value)} />
+        <NavNumberChoice label="Espessura da borda" description="Zero remove completamente o contorno." value={state.settings.navBorderWidth} options={[0, 1, 2, 3]} suffix=" px" onChange={(value) => setSetting("navBorderWidth", value)} />
+      </div>
+
+      <div className="nav-lab-section"><span className="eyebrow">SOMBRA</span><div className="nav-shadow-picker">{([{"value":"none","label":"Sem sombra"},{"value":"soft","label":"Suave"},{"value":"strong","label":"Forte"}] as const).map((option) => <button type="button" key={option.value} className={state.settings.navShadow === option.value ? "active" : ""} onClick={() => setSetting("navShadow", option.value)}>{option.label}</button>)}</div></div>
+
+      <div className="nav-lab-section"><span className="eyebrow">CORES</span><div className="nav-color-grid">
+        <NavColorControl label="Fundo da barra" value={state.settings.navBackgroundColor} onChange={(value) => setSetting("navBackgroundColor", value)} />
+        <NavColorControl label="Borda" value={state.settings.navBorderColor} onChange={(value) => setSetting("navBorderColor", value)} />
+        <NavColorControl label="Ícones inativos" value={state.settings.navInactiveColor} onChange={(value) => setSetting("navInactiveColor", value)} />
+        <NavColorControl label="Fundo selecionado" value={state.settings.navActiveBackgroundColor} onChange={(value) => setSetting("navActiveBackgroundColor", value)} />
+        <NavColorControl label="Ícone selecionado" value={state.settings.navActiveColor} onChange={(value) => setSetting("navActiveColor", value)} />
+        <NavColorControl label="Botão +" value={state.settings.navAddBackgroundColor} onChange={(value) => setSetting("navAddBackgroundColor", value)} />
+      </div></div>
+
+      <button type="button" className="secondary-review-button nav-reset-button" onClick={reset}><Icon name="repeat" size={18} /> Restaurar padrão da barra</button>
     </div>
   </Sheet>;
 }
@@ -601,10 +689,11 @@ export default function App() {
     {tab === "transactions" && <TransactionsView state={state} month={month} setMonth={setMonth} reviewPending={reviewPending} onEdit={(transaction) => setModal({ type: "transaction", kind: transaction.kind, transaction })} />}
     {tab === "plan" && <PlanView state={state} month={month} onModal={setModal} />}
     {tab === "analysis" && <AnalysisView state={state} month={month} onComparisonMonths={(kind, count) => setState((current) => ({ ...current, settings: { ...current.settings, [kind === "income" ? "incomeComparisonMonths" : "expenseComparisonMonths"]: count } }))} />}
-    <BottomNav active={tab} onChange={(next) => { if (next === "transactions") setReviewPending(false); setTab(next); }} onAdd={() => setModal({ type: "transaction", kind: "expense" })} />
+    <BottomNav active={tab} settings={state.settings} onChange={(next) => { if (next === "transactions") setReviewPending(false); setTab(next); }} onAdd={() => setModal({ type: "transaction", kind: "expense" })} />
     {modal?.type === "transaction" && <TransactionSheet state={state} kind={modal.kind} existing={modal.transaction} onClose={() => setModal(null)} onSave={saveTransactions} onDelete={deleteTransaction} />}
     {modal?.type === "import" && <ImportSheet state={state} onClose={() => setModal(null)} onImport={importTransactions} />}
-    {modal?.type === "settings" && <SettingsSheet state={state} onClose={() => setModal(null)} onState={setState} onRules={() => setModal({ type: "rules" })} />}
+    {modal?.type === "settings" && <SettingsSheet state={state} onClose={() => setModal(null)} onState={setState} onRules={() => setModal({ type: "rules" })} onNavLab={() => setModal({ type: "navLab" })} />}
+    {modal?.type === "navLab" && <NavLabSheet state={state} onClose={() => setModal({ type: "settings" })} onState={setState} />}
     {modal?.type === "rules" && <RulesSheet state={state} onClose={() => setModal({ type: "settings" })} onChange={(rules) => setState((current) => ({ ...current, rules }))} />}
     {modal?.type === "account" && <AccountSheet state={state} account={modal.account} onClose={() => setModal(null)} onSave={(account) => setAndClose("accounts", account, account.id)} onDelete={(account) => { setState((current) => ({ ...current, accounts: current.accounts.filter((item) => item.id !== account.id) })); setModal(null); }} />}
     {modal?.type === "budget" && <BudgetSheet state={state} budget={modal.budget} onClose={() => setModal(null)} onSave={(budget) => setAndClose("budgets", budget, budget.id)} onDelete={(id) => { setState((current) => ({ ...current, budgets: current.budgets.filter((item) => item.id !== id) })); setModal(null); }} />}
