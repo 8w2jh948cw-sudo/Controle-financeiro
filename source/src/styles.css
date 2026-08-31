@@ -326,35 +326,46 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .money-input { min-height: 64px; background: var(--surface); border: 1px solid var(--input-border); border-radius: 17px; display: flex; align-items: center; padding: 0 15px; gap: 7px; }
 .money-input span { font-size: 17px; color: #8f9892; }
 .money-input input { border: 0; padding: 0; min-height: auto; font-size: 29px; font-weight: 800; letter-spacing: -1px; }
-.sheet:has(.transaction-form) { width: 100%; max-height: 96svh; padding: 5px 14px max(18px, env(safe-area-inset-bottom)); overflow-x: hidden; }
-.sheet:has(.transaction-form) .sheet-handle { margin-bottom: 9px; }
-.sheet:has(.transaction-form) > header { margin-bottom: 10px; align-items: center; }
-.sheet:has(.transaction-form) > header h2 { font-size: 18px; }
-.sheet:has(.transaction-form) > header .icon-button { width: 34px; height: 34px; }
+.sheet:has(.transaction-form) { width: calc(100% - 12px); max-width: 520px; max-height: 90svh; padding: 5px 12px max(14px, env(safe-area-inset-bottom)); overflow-x: hidden; border-radius: 22px 22px 0 0; }
+.sheet:has(.transaction-form) .sheet-handle { width: 36px; height: 4px; margin: 1px auto 7px; }
+.sheet:has(.transaction-form) > header { margin-bottom: 8px; align-items: center; }
+.sheet:has(.transaction-form) > header h2 { font-size: 17px; letter-spacing: -.4px; }
+.sheet:has(.transaction-form) > header .icon-button { width: 32px; height: 32px; border-radius: 11px; }
 .transaction-form { width: 100%; min-width: 0; gap: 7px; }
-.transaction-kind-picker { width: 100%; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-.transaction-kind-picker button { width: 100%; min-width: 0; min-height: 42px; padding: 4px 3px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 4px; text-align: left; cursor: pointer; overflow: hidden; }
+.transaction-kind-picker { width: 100%; max-width: 100%; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.transaction-kind-picker button { width: 100%; max-width: 100%; min-width: 0; min-height: 36px; padding: 3px 2px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 3px; cursor: pointer; overflow: hidden; }
 .transaction-kind-picker button > svg { width: 17px; height: 17px; flex: 0 0 auto; }
 .transaction-kind-picker button > span { min-width: 0; display: grid; gap: 2px; }
-.transaction-kind-picker strong { font-size: 10px; white-space: nowrap; }
+.transaction-kind-picker strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 11px; line-height: 1; white-space: nowrap; }
 .transaction-kind-picker small { display: none; }
 .transaction-kind-picker button.active.expense { border-color: color-mix(in srgb, var(--expense-color) 50%, var(--line)); background: color-mix(in srgb, var(--expense-color) 12%, var(--surface)); color: var(--expense-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--expense-color) 12%, transparent); }
 .transaction-kind-picker button.active.income { border-color: color-mix(in srgb, var(--income-color) 50%, var(--line)); background: color-mix(in srgb, var(--income-color) 12%, var(--surface)); color: color-mix(in srgb, var(--income-color) 78%, #073a27); box-shadow: 0 0 0 2px color-mix(in srgb, var(--income-color) 12%, transparent); }
 .transaction-kind-picker button.active.transfer { border-color: color-mix(in srgb, var(--green-2) 42%, var(--line)); background: color-mix(in srgb, var(--green-2) 9%, var(--surface)); color: var(--green-2); box-shadow: 0 0 0 2px color-mix(in srgb, var(--green-2) 10%, transparent); }
-.transaction-amount-panel { padding: 7px 2px 8px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; }
+.transaction-amount-panel { padding: 5px 2px 6px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; }
 .transaction-amount-panel > span { display: block; margin-bottom: 2px; color: var(--muted); font-size: 8px; font-weight: 850; letter-spacing: .7px; }
-.transaction-amount-panel .money-input { min-height: 44px; border: 0; padding: 0; background: transparent; }
-.transaction-amount-panel .money-input span { font-size: 17px; font-weight: 750; }
-.transaction-amount-panel .money-input input { font-size: 30px; }
+.transaction-amount-panel .money-input { min-height: 38px; border: 0; padding: 0; background: transparent; }
+.transaction-amount-panel .money-input span { font-size: 15px; font-weight: 750; }
+.transaction-amount-panel .money-input input { font-size: 26px; }
 .transaction-amount-panel > small { display: block; color: var(--muted); font-size: 9px; }
 .kind-expense .transaction-amount-panel { border-color: var(--line); background: transparent; }
 .kind-expense .transaction-amount-panel .money-input input { color: var(--expense-color); }
 .kind-income .transaction-amount-panel { border-color: var(--line); background: transparent; }
 .kind-income .transaction-amount-panel .money-input input { color: color-mix(in srgb, var(--income-color) 78%, #073a27); }
 .transaction-form-section { padding: 7px 0 2px; border: 0; border-radius: 0; background: transparent; display: grid; gap: 7px; }
-.transaction-form .form-field { min-width: 0; gap: 3px; font-size: 10px; }
+.transaction-form .form-field { min-width: 0; gap: 3px; font-size: 10.5px; }
 .transaction-form .form-field input, .transaction-form .form-field select, .transaction-form .form-field textarea { width: 100%; min-width: 0; min-height: 40px; border-radius: 10px; padding-inline: 9px; font-size: 16px; }
 .transaction-form .form-field textarea { min-height: 66px; padding-block: 9px; }
+.automatic-date, .optional-details-toggle { width: 100%; min-height: 40px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; text-align: left; cursor: pointer; }
+.automatic-date > svg:first-child, .optional-details-toggle > svg:first-child { color: var(--green-2); }
+.automatic-date > span { min-width: 0; display: grid; gap: 1px; }
+.automatic-date strong { overflow: hidden; text-overflow: ellipsis; font-size: 11px; white-space: nowrap; }
+.automatic-date small { color: var(--muted); font-size: 8.5px; }
+.automatic-date > svg:last-child, .optional-details-toggle > svg:last-child { color: var(--muted); }
+.optional-details-toggle { min-height: 38px; background: transparent; }
+.optional-details-toggle span { font-size: 10.5px; font-weight: 800; }
+.optional-details-toggle > svg:last-child { transition: transform .18s ease; }
+.optional-details-toggle.open > svg:last-child { transform: rotate(90deg); }
+.transaction-optional-fields { padding: 9px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-tint); display: grid; gap: 8px; }
 .transaction-section-title { display: flex; align-items: center; gap: 5px; padding-bottom: 1px; border: 0; }
 .transaction-section-title > span { width: 21px; height: 21px; border-radius: 7px; display: grid; place-items: center; color: var(--green-2); background: transparent; }
 .transaction-section-title > span svg { width: 14px; height: 14px; }
@@ -373,7 +384,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .transaction-advanced > summary > svg { color: var(--muted); transition: transform .2s ease; }
 .transaction-advanced[open] > summary > svg { transform: rotate(90deg); }
 .transaction-advanced-body { padding: 10px; border-top: 1px solid var(--line); background: var(--sheet); display: grid; gap: 8px; }
-.transaction-save-button { min-height: 46px; font-size: 12px; box-shadow: none; border-radius: 12px; }
+.transaction-save-button { min-height: 42px; font-size: 12px; box-shadow: none; border-radius: 11px; }
 .kind-expense .transaction-save-button { background: var(--expense-color); }
 .kind-income .transaction-save-button { background: color-mix(in srgb, var(--income-color) 78%, #075236); }
 .primary-button, .danger-button, .text-button { min-height: 52px; border: 0; border-radius: 16px; background: var(--green); color: #fff; font-weight: 800; font-size: 13px; display: flex; justify-content: center; align-items: center; gap: 7px; padding: 0 15px; cursor: pointer; }

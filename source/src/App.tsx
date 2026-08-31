@@ -343,12 +343,13 @@ function TransactionSheet({ state, kind, existing, onClose, onSave, onDelete, on
   const [categoryId, setCategoryId] = useState(existing?.categoryId || (draftKind === "income" ? "salary" : "other"));
   const [accountId, setAccountId] = useState(existing?.accountId || state.accounts[0]?.id || "");
   const [destinationAccountId, setDestinationAccountId] = useState(existing?.destinationAccountId || state.accounts.find((account) => account.id !== accountId)?.id || "");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(existing?.paymentMethod || "pix");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(existing?.paymentMethod || "other");
   const [notes, setNotes] = useState(existing?.notes || "");
   const [installments, setInstallments] = useState(existing?.installment?.total || 1);
   const [recurring, setRecurring] = useState(false);
   const [rememberRule, setRememberRule] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(!!existing);
   const value = Math.abs(parseMoney(amount));
 
   const changeKind = (next: TransactionKind) => { setDraftKind(next); if (next === "income") setCategoryId("salary"); if (next === "transfer") setCategoryId("other"); };
@@ -372,43 +373,37 @@ function TransactionSheet({ state, kind, existing, onClose, onSave, onDelete, on
   return <Sheet title={existing ? "Editar" : "Adicionar"} onClose={onClose}>
     <form className={"form transaction-form kind-" + draftKind} onSubmit={submit}>
       <div className="transaction-kind-picker" role="tablist" aria-label="Tipo de lançamento">
-        <button type="button" className={draftKind === "expense" ? "active expense" : "expense"} onClick={() => changeKind("expense")}><Icon name="arrowDown" size={21} /><span><strong>Saída</strong><small>Dinheiro gasto</small></span></button>
-        <button type="button" className={draftKind === "income" ? "active income" : "income"} onClick={() => changeKind("income")}><Icon name="arrowUp" size={21} /><span><strong>Entrada</strong><small>Dinheiro recebido</small></span></button>
-        <button type="button" className={draftKind === "transfer" ? "active transfer" : "transfer"} onClick={() => changeKind("transfer")}><Icon name="transfer" size={21} /><span><strong>Transferir</strong><small>Entre suas contas</small></span></button>
+        <button type="button" className={draftKind === "expense" ? "active expense" : "expense"} onClick={() => changeKind("expense")}><strong>Saída</strong></button>
+        <button type="button" className={draftKind === "income" ? "active income" : "income"} onClick={() => changeKind("income")}><strong>Entrada</strong></button>
+        <button type="button" className={draftKind === "transfer" ? "active transfer" : "transfer"} onClick={() => changeKind("transfer")}><strong>Transferir</strong></button>
       </div>
 
       <div className="transaction-amount-panel">
         <span>{draftKind === "expense" ? "VALOR DA SAÍDA" : draftKind === "income" ? "VALOR DA ENTRADA" : "VALOR DA TRANSFERÊNCIA"}</span>
-        <div className="money-input"><span>R$</span><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" autoFocus={!existing} /></div>
+        <div className="money-input"><span>R$</span><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" /></div>
         {!existing && draftKind === "expense" && installments > 1 && <small>{installments} parcelas de aproximadamente {money.format(value / installments || 0)}</small>}
       </div>
 
       {existing?.needsReview && <div className="review-banner"><Icon name="edit" size={18} /><span><strong>Este lançamento precisa de detalhes</strong><small>Complete o título e a categoria ou confirme que deseja mantê-lo assim.</small></span></div>}
 
-      <section className="transaction-form-section">
-        <div className="transaction-section-title"><span><Icon name="edit" size={18} /></span><div><strong>Informações principais</strong><small>O que aconteceu e onde</small></div></div>
-        <Field label={draftKind === "transfer" ? "Descrição" : "Título — o que foi?"}><input value={description} onChange={(event) => setDescription(event.target.value)} placeholder={draftKind === "income" ? "Ex.: Atendimento de unhas" : draftKind === "transfer" ? "Ex.: Guardar na reserva" : "Ex.: Produtos de limpeza"} /></Field>
-        {draftKind !== "transfer" && <Field label={draftKind === "income" ? "Origem (opcional)" : "Local (opcional)"}><input value={place} onChange={(event) => setPlace(event.target.value)} placeholder={draftKind === "income" ? "Ex.: Cliente Ana ou Hotmart" : "Ex.: Mercado Livre ou Restaurante Origami"} /></Field>}
-        {draftKind !== "transfer" && <div className="category-field"><Field label="Categoria"><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>{state.categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></Field><button className="inline-config-button" type="button" onClick={() => setShowCategories(true)}><Icon name="filter" size={16} /> Ver e configurar categorias</button></div>}
-      </section>
+      <Field label={draftKind === "income" ? "O que você recebeu?" : draftKind === "transfer" ? "Motivo da transferência" : "O que você comprou ou pagou?"}><input value={description} onChange={(event) => setDescription(event.target.value)} placeholder={draftKind === "income" ? "Ex.: Atendimento de unhas" : draftKind === "transfer" ? "Ex.: Guardar na reserva" : "Ex.: Produtos de limpeza"} /></Field>
 
-      <section className="transaction-form-section">
-        <div className="transaction-section-title"><span><Icon name="wallet" size={18} /></span><div><strong>Pagamento e data</strong><small>De onde saiu ou para onde entrou</small></div></div>
-        <div className="form-grid"><Field label={draftKind === "transfer" ? "Conta de origem" : "Conta ou cartão"}><select value={accountId} onChange={(event) => { setAccountId(event.target.value); if (destinationAccountId === event.target.value) setDestinationAccountId(state.accounts.find((account) => account.id !== event.target.value)?.id || ""); }}>{state.accounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></Field>
-        {draftKind === "transfer" ? <Field label="Conta de destino"><select value={destinationAccountId} onChange={(event) => setDestinationAccountId(event.target.value)}>{state.accounts.filter((account) => account.id !== accountId && account.type !== "credit").map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></Field> : <Field label="Forma de pagamento"><select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}><option value="pix">Pix</option><option value="debit">Débito</option><option value="credit">Crédito</option><option value="cash">Dinheiro</option><option value="transfer">Transferência</option><option value="other">Outro</option></select></Field>}</div>
-        <div className="form-grid"><Field label="Data"><input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></Field><Field label="Horário"><input type="time" value={time} onChange={(event) => setTime(event.target.value)} /></Field></div>
-      </section>
+      <button className="automatic-date" type="button" onClick={() => setDetailsOpen(true)}><Icon name="clock" size={17} /><span><strong>{displayDate(date)} às {time}</strong><small>Data e horário preenchidos automaticamente</small></span>{!detailsOpen && <Icon name="edit" size={15} />}</button>
 
-      <details className="transaction-advanced" open={!!existing}>
-        <summary><span><Icon name="more" size={19} /></span><div><strong>Mais opções</strong><small>Parcelamento, repetição e observações</small></div><Icon name="chevron" size={17} /></summary>
-        <div className="transaction-advanced-body">
+      <button className={"optional-details-toggle " + (detailsOpen ? "open" : "")} type="button" onClick={() => setDetailsOpen((open) => !open)}><Icon name="more" size={18} /><span>{detailsOpen ? "Ocultar detalhes opcionais" : "Adicionar detalhes opcionais"}</span><Icon name="chevron" size={16} /></button>
+
+      {detailsOpen && <section className="transaction-optional-fields">
+          {draftKind !== "transfer" && <Field label={draftKind === "income" ? "Origem (opcional)" : "Local (opcional)"}><input value={place} onChange={(event) => setPlace(event.target.value)} placeholder={draftKind === "income" ? "Ex.: Cliente Ana ou Hotmart" : "Ex.: Mercado Livre"} /></Field>}
+          {draftKind !== "transfer" && <div className="category-field"><Field label="Categoria (opcional)"><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>{state.categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></Field><button className="inline-config-button" type="button" onClick={() => setShowCategories(true)}><Icon name="filter" size={16} /> Ver e configurar categorias</button></div>}
+          <div className="form-grid"><Field label={draftKind === "transfer" ? "Conta de origem" : "Conta ou cartão (opcional)"}><select value={accountId} onChange={(event) => { setAccountId(event.target.value); if (destinationAccountId === event.target.value) setDestinationAccountId(state.accounts.find((account) => account.id !== event.target.value)?.id || ""); }}>{state.accounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></Field>
+          {draftKind === "transfer" ? <Field label="Conta de destino"><select value={destinationAccountId} onChange={(event) => setDestinationAccountId(event.target.value)}>{state.accounts.filter((account) => account.id !== accountId && account.type !== "credit").map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></Field> : <Field label="Pagamento (opcional)"><select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}><option value="other">Não informar</option><option value="pix">Pix</option><option value="debit">Débito</option><option value="credit">Crédito</option><option value="cash">Dinheiro</option><option value="transfer">Transferência</option></select></Field>}</div>
+          <div className="form-grid"><Field label="Data"><input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></Field><Field label="Horário"><input type="time" value={time} onChange={(event) => setTime(event.target.value)} /></Field></div>
           {!existing && draftKind === "expense" && <Field label="Parcelamento"><select value={installments} onChange={(event) => { setInstallments(Number(event.target.value)); if (Number(event.target.value) > 1) setRecurring(false); }}>{Array.from({ length: 24 }, (_, index) => <option key={index + 1} value={index + 1}>{index ? `${index + 1} parcelas` : "À vista"}</option>)}</select></Field>}
           {!existing && draftKind !== "transfer" && installments === 1 && <label className="toggle-row"><span><strong>Repetir pelos próximos 6 meses</strong><small>Útil para salário, aluguel e assinaturas.</small></span><input type="checkbox" checked={recurring} onChange={(event) => setRecurring(event.target.checked)} /></label>}
           <Field label="Observação (opcional)"><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Detalhes que podem ser úteis depois" rows={3} /></Field>
           {existing?.originalDescription && <details className="bank-description"><summary>Ver descrição original do banco</summary><p>{existing.originalDescription}</p></details>}
           {existing?.originalDescription && <SettingToggle compact title="Lembrar para próximas importações" description="Usa este local, categoria e título em descrições parecidas." checked={rememberRule} onChange={setRememberRule} />}
-        </div>
-      </details>
+      </section>}
 
       <button className="primary-button transaction-save-button" type="submit" disabled={!description.trim() || !value}><Icon name="check" size={19} /> Salvar lançamento</button>
       {existing?.needsReview && <button className="secondary-review-button" type="button" onClick={() => save(true)}><Icon name="check" size={18} /> Confirmar assim mesmo</button>}
