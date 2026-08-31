@@ -233,18 +233,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 .chart-card { padding-bottom: 20px; }
 .chart-card > .section-heading > strong { font-size: 15px; white-space: nowrap; }
+.analysis-title { justify-content: center; margin-bottom: 14px; text-align: center; }
+.analysis-title h1 { margin: 0; }
+.analysis-month-picker { display: flex; justify-content: center; padding: 14px 14px 0; }
+.analysis-month-picker .month-picker { margin: 0; box-shadow: none; }
 .donut-wrap { display: grid; place-items: center; padding: 18px 0 25px; }
 .donut { width: min(58vw, 235px); aspect-ratio: 1; border-radius: 50%; background: var(--segments); display: grid; place-items: center; position: relative; transform: rotate(-90deg); }
 .donut::after { content: ""; width: 58%; height: 58%; border-radius: 50%; background: var(--surface); position: absolute; }
 .donut > span { z-index: 1; display: grid; text-align: center; transform: rotate(90deg); }
-.donut small { color: #9aa0aa; font-size: 10px; }
-.donut strong { font-size: 16px; margin-top: 3px; }
+.donut small { color: #9aa0aa; font-size: 14px; font-weight: 800; }
+.donut strong { font-size: 18px; margin-top: 4px; }
 .category-breakdown { padding: 0 20px; display: grid; gap: 14px; }
-.category-line > div:first-child { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; font-size: 11px; }
+.category-line > div:first-child { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; font-size: 11px; }
 .category-line b { font-size: 11px; }
-.category-line span:nth-child(3) { color: #9ca1aa; }
-.category-dot { width: 9px; height: 9px; border-radius: 50%; }
-.thin-track { height: 5px; margin-top: 7px; }
+.category-line span { color: #9ca1aa; }
+.thin-track { height: 9px; margin-top: 7px; background: var(--track); border-radius: 99px; overflow: hidden; }
 .thin-track i { height: 100%; border-radius: inherit; display: block; }
 .comparison-card { padding: 20px; }
 .bar-row { display: grid; grid-template-columns: 78px 1fr auto; align-items: center; gap: 10px; margin-top: 17px; font-size: 10px; }

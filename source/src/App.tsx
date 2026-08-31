@@ -164,7 +164,7 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
     <button className="transfer-shortcut" onClick={() => onModal({ type: "transaction", kind: "transfer" })}><Icon name="transfer" size={19} /><span><strong>Transferir entre contas</strong><small>Movimente dinheiro sem contar como entrada ou saída</small></span><Icon name="chevron" size={17} /></button>
 
     {state.settings.diagnosticsEnabled && homeDiagnostics.length > 0 && <section className="home-diagnostics">
-      <div className="home-diagnostics-heading"><h2>Dicas e avisos sobre o mês atual</h2><button onClick={() => onTab("analysis")}>Ver todos</button></div>
+      <div className="home-diagnostics-heading"><h2>Recados desse mês</h2><button onClick={() => onTab("analysis")}>Ver todos</button></div>
       <div className="diagnostic-card-stack">{homeDiagnostics.map((diagnostic) => <button className={"diagnostic-card " + diagnostic.tone} key={diagnostic.id} onClick={() => onTab("analysis")}>
         <span className="diagnostic-topline"><span className="diagnostic-icon"><Icon name={diagnostic.icon as IconName} /></span><span className="diagnostic-title"><small>{diagnostic.tone === "warning" ? "AVISO" : diagnostic.tone === "positive" ? "BOA NOTÍCIA" : "DICA"} · SEM IA</small><strong>{diagnostic.title}</strong></span><Icon name="chevron" size={18} /></span><p>{diagnostic.message}</p>
       </button>)}</div>
@@ -267,7 +267,7 @@ function ComparisonChart({ state, month, kind, count, onCount }: { state: AppSta
   </section>;
 }
 
-function AnalysisView({ state, month, onComparisonMonths }: { state: AppState; month: string; onComparisonMonths: (kind: "income" | "expense", count: number) => void }) {
+function AnalysisView({ state, month, setMonth, onComparisonMonths }: { state: AppState; month: string; setMonth: (month: string) => void; onComparisonMonths: (kind: "income" | "expense", count: number) => void }) {
   const items = categoryTotals(state, month);
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   let cursor = 0;
@@ -278,13 +278,13 @@ function AnalysisView({ state, month, onComparisonMonths }: { state: AppState; m
   }).join(", ") : "#e8ece8 0 100%";
   const diagnostics = buildDiagnostics(state, month);
   return <main className="page">
-    <div className="page-title"><div><span className="eyebrow">ANÁLISE</span><h1>Entenda seu comportamento</h1></div></div>
-    <section className="chart-card">
-      <div className="section-heading"><div><span className="eyebrow">GASTOS POR CATEGORIA</span><h2>{monthLabel(month)}</h2></div><strong>{hideableMoney(total, state.settings.hiddenValues)}</strong></div>
+    <div className="page-title analysis-title"><h1>Gráficos</h1></div>
+    <section className="chart-card category-chart">
+      <div className="analysis-month-picker"><MonthPicker value={month} onChange={setMonth} /></div>
       <div className="donut-wrap"><div className="donut" style={{ "--segments": `conic-gradient(${segments})` } as CSSProperties}><span><small>Total</small><strong>{state.settings.hiddenValues ? "••••" : money.format(total)}</strong></span></div></div>
       <div className="category-breakdown">{items.map((item) => {
         const share = total ? Math.round(item.amount / total * 100) : 0;
-        return <div className="category-line" key={item.categoryId}><div><span className="category-dot" style={{ background: toneColor[item.category?.tone || "slate"] }} /><strong>{item.category?.name || "Outros"}</strong><span>{share}%</span><b>{hideableMoney(item.amount, state.settings.hiddenValues)}</b></div><div className="thin-track"><i style={{ width: share + "%", background: toneColor[item.category?.tone || "slate"] }} /></div></div>;
+        return <div className="category-line" key={item.categoryId}><div><strong>{item.category?.name || "Outros"}</strong><span>{share}%</span><b>{hideableMoney(item.amount, state.settings.hiddenValues)}</b></div><div className="thin-track"><i style={{ width: share + "%", background: toneColor[item.category?.tone || "slate"] }} /></div></div>;
       })}{!items.length && <EmptyState icon="chart" title="Ainda sem gráfico" text="As despesas deste mês aparecerão aqui por categoria." />}</div>
     </section>
     <ComparisonChart state={state} month={month} kind="income" count={state.settings.incomeComparisonMonths} onCount={(count) => onComparisonMonths("income", count)} />
@@ -684,7 +684,7 @@ export default function App() {
     {tab === "home" && <HomeView state={state} month={month} setMonth={setMonth} onModal={setModal} onTab={setTab} onReviewPending={() => { const latestPending = state.transactions.filter((item) => item.needsReview).sort((a, b) => b.date.localeCompare(a.date))[0]; if (latestPending) setMonth(latestPending.date.slice(0, 7)); setReviewPending(true); setTab("transactions"); }} />}
     {tab === "transactions" && <TransactionsView state={state} month={month} setMonth={setMonth} reviewPending={reviewPending} onEdit={(transaction) => setModal({ type: "transaction", kind: transaction.kind, transaction })} />}
     {tab === "plan" && <PlanView state={state} month={month} onModal={setModal} />}
-    {tab === "analysis" && <AnalysisView state={state} month={month} onComparisonMonths={(kind, count) => setState((current) => ({ ...current, settings: { ...current.settings, [kind === "income" ? "incomeComparisonMonths" : "expenseComparisonMonths"]: count } }))} />}
+    {tab === "analysis" && <AnalysisView state={state} month={month} setMonth={setMonth} onComparisonMonths={(kind, count) => setState((current) => ({ ...current, settings: { ...current.settings, [kind === "income" ? "incomeComparisonMonths" : "expenseComparisonMonths"]: count } }))} />}
     <BottomNav active={tab} settings={state.settings} onChange={(next) => { if (next === "transactions") setReviewPending(false); setTab(next); }} onAdd={() => setModal({ type: "transaction", kind: "expense" })} />
     {modal?.type === "transaction" && <TransactionSheet state={state} kind={modal.kind} existing={modal.transaction} onClose={() => setModal(null)} onSave={saveTransactions} onDelete={deleteTransaction} />}
     {modal?.type === "import" && <ImportSheet state={state} onClose={() => setModal(null)} onImport={importTransactions} />}
