@@ -142,9 +142,6 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
     </div>
 
     <section className="monthly-overview-card">
-      <div className="monthly-overview-heading">
-        <span className="eyebrow">RESUMO DO MÊS</span>
-      </div>
       <div className="money-flow">
         <button className="flow-action income" onClick={() => onModal({ type: "transaction", kind: "income" })}>
           <span className="flow-arrow"><Icon name="arrowRight" size={30} /></span><small>Entradas</small><strong>{hideableMoney(totals.income, state.settings.hiddenValues)}</strong><em>Registrar</em>

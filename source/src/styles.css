@@ -88,7 +88,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .home-import-button { min-height: 50px; padding: 0 13px; border: 1px solid color-mix(in srgb, var(--green-2) 25%, var(--line)); border-radius: 17px; background: color-mix(in srgb, var(--income-color) 10%, var(--surface)); color: var(--green-2); display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 800; cursor: pointer; }
 
 .eyebrow { color: #a0a6b2; letter-spacing: 1.25px; font-size: 11px; font-weight: 800; }
-.monthly-overview-card { background: var(--surface); border: 1px solid var(--line); border-radius: 27px; box-shadow: var(--shadow); padding: 17px 12px 12px; margin-bottom: 12px; position: relative; overflow: hidden; }
+.monthly-overview-card { background: var(--surface); border: 1px solid var(--line); border-radius: 27px; box-shadow: var(--shadow); padding: 12px; margin-bottom: 12px; position: relative; overflow: hidden; }
 .monthly-overview-heading { display: flex; justify-content: center; align-items: center; position: relative; padding: 0 5px 12px; text-align: center; }
 .monthly-overview-heading h2 { margin: 5px 0 0; font-size: 17px; letter-spacing: -.4px; }
 .available-icon { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; color: var(--green-2); background: color-mix(in srgb, var(--income-color) 13%, var(--surface)); }
