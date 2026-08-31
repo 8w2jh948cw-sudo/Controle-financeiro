@@ -67,7 +67,6 @@ export type CategoryRule = {
 };
 
 export type AppSettings = {
-  userName: string;
   hiddenValues: boolean;
   diagnosticsEnabled: boolean;
   diagnosticMaxCards: number;

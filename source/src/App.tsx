@@ -36,6 +36,11 @@ const addMonths = (date: string, amount: number) => {
   return localISODate(result);
 };
 const displayDate = (date: string) => new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(new Date(date + "T12:00:00"));
+const dateGroupLabel = (date: string) => {
+  const label = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long" }).format(new Date(date + "T12:00:00"));
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+const cleanLegacySettings = (settings: AppState["settings"] & { userName?: string }) => Object.fromEntries(Object.entries(settings).filter(([key]) => key !== "userName")) as unknown as AppState["settings"];
 const monthLabel = (key: string) => {
   const [year, month] = key.split("-").map(Number);
   const label = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(year, month - 1, 1));
@@ -114,9 +119,22 @@ function TransactionRow({ transaction, state, onClick }: { transaction: Transact
   const transfer = transaction.kind === "transfer";
   return <button className="transaction-row" onClick={onClick}>
     <span className={"category-icon tone-" + (category?.tone || "slate")}><Icon name={(transfer ? "transfer" : category?.icon || "wallet") as IconName} size={20} /></span>
-    <span className="transaction-copy"><span className="transaction-title-line"><strong>{transaction.description}</strong>{transaction.needsReview && <i className="review-tag">Revisar detalhes</i>}</span><small>{transaction.place ? transaction.place + " · " : ""}{displayDate(transaction.date)} · {transaction.time} · {transfer ? "Transferência" : category?.name || "Outros"}</small></span>
+    <span className="transaction-copy"><span className="transaction-title-line"><strong>{transaction.description}</strong>{transaction.needsReview && <i className="review-tag">Revisar detalhes</i>}</span><small>{transaction.time}</small></span>
     <span className={"transaction-value " + transaction.kind}>{transaction.kind === "expense" ? "−" : transaction.kind === "income" ? "+" : ""}{hideableMoney(transaction.amount, state.settings.hiddenValues)}</span>
   </button>;
+}
+
+function TransactionGroups({ transactions, state, onClick }: { transactions: Transaction[]; state: AppState; onClick: (transaction: Transaction) => void }) {
+  const groups = transactions.reduce<Array<{ date: string; items: Transaction[] }>>((result, transaction) => {
+    const current = result[result.length - 1];
+    if (current?.date === transaction.date) current.items.push(transaction);
+    else result.push({ date: transaction.date, items: [transaction] });
+    return result;
+  }, []);
+  return <>{groups.map((group) => <div className="transaction-date-group" key={group.date}>
+    <div className="transaction-date-divider"><span>{dateGroupLabel(group.date)}</span></div>
+    {group.items.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} state={state} onClick={() => onClick(transaction)} />)}
+  </div>)}</>;
 }
 
 function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: { state: AppState; month: string; setMonth: (month: string) => void; onModal: (modal: Modal) => void; onTab: (tab: Tab) => void; onReviewPending: () => void }) {
@@ -172,7 +190,7 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
 
     <section className="list-card recent-list">
       <div className="section-heading"><h2>Movimentações recentes</h2><button onClick={() => onTab("transactions")}>Ver todas</button></div>
-      {recent.length ? recent.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} state={state} onClick={() => onModal({ type: "transaction", kind: transaction.kind, transaction })} />) : <EmptyState icon="receipt" title="Nenhum lançamento" text="Registre um gasto, uma entrada ou importe seu extrato." />}
+      {recent.length ? <TransactionGroups transactions={recent} state={state} onClick={(transaction) => onModal({ type: "transaction", kind: transaction.kind, transaction })} /> : <EmptyState icon="receipt" title="Nenhum lançamento" text="Registre um gasto, uma entrada ou importe seu extrato." />}
     </section>
 
     <section className="budget-card">
@@ -198,7 +216,7 @@ function TransactionsView({ state, month, setMonth, onEdit, reviewPending = fals
     <section className="mini-summary"><span><small>Entradas</small><strong className="income">{hideableMoney(totals.income, state.settings.hiddenValues)}</strong></span><span><small>Saídas</small><strong className="expense">{hideableMoney(totals.expense, state.settings.hiddenValues)}</strong></span><span><small>Resultado</small><strong>{hideableMoney(totals.income - totals.expense, state.settings.hiddenValues)}</strong></span></section>
     <label className="search-field"><Icon name="search" size={20} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nome ou observação" /></label>
     <div className="filter-chips"><button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>Todos</button><button className={filter === "expense" ? "active" : ""} onClick={() => setFilter("expense")}>Saídas</button><button className={filter === "income" ? "active" : ""} onClick={() => setFilter("income")}>Entradas</button><button className={filter === "pending" ? "active pending-filter" : "pending-filter"} onClick={() => setFilter("pending")}><Icon name="edit" size={15} /> Pendentes ({state.transactions.filter((item) => item.needsReview).length})</button></div>
-    <section className="list-card transaction-list">{items.length ? items.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} state={state} onClick={() => onEdit(transaction)} />) : <EmptyState icon="search" title="Nada encontrado" text="Altere os filtros ou registre uma movimentação." />}</section>
+    <section className="list-card transaction-list">{items.length ? <TransactionGroups transactions={items} state={state} onClick={onEdit} /> : <EmptyState icon="search" title="Nada encontrado" text="Altere os filtros ou registre uma movimentação." />}</section>
   </main>;
 }
 
@@ -477,7 +495,7 @@ function SettingsSheet({ state, onClose, onState, onRules, onNavLab }: { state: 
     try {
       const parsed = JSON.parse(await file.text()) as AppState;
       if (!Array.isArray(parsed.transactions) || !Array.isArray(parsed.accounts)) throw new Error();
-      onState({ ...parsed, settings: { ...initialState.settings, ...parsed.settings } });
+      onState({ ...parsed, settings: { ...initialState.settings, ...cleanLegacySettings(parsed.settings) } });
       onClose();
     } catch {
       window.alert("Este arquivo não parece ser um backup válido do app.");
@@ -491,10 +509,8 @@ function SettingsSheet({ state, onClose, onState, onRules, onNavLab }: { state: 
   const incomePresets = ["#55b87a", "#34c759", "#7fcf8b", "#0b8f5a", "#57c7a1"];
   const expensePresets = ["#ff7075", "#ff453a", "#e85d68", "#d94a4a", "#ff8a80"];
 
-  return <Sheet title="Ajustes" subtitle="Aparência, privacidade, automações e seus dados." onClose={onClose}>
+  return <Sheet title="Ajustes" onClose={onClose}>
     <div className="settings-list">
-      <Field label="Seu nome"><input value={state.settings.userName} onChange={(event) => setSetting("userName", event.target.value)} /></Field>
-
       <div className="settings-group appearance-group">
         <span className="eyebrow">APARÊNCIA</span>
         <div className="theme-picker" role="group" aria-label="Tema do aplicativo">
@@ -650,7 +666,7 @@ export default function App() {
   useEffect(() => { loadState().then((stored) => {
     if (stored) {
       const nextState = stored.demoMode && stored.version < initialState.version ? initialState : stored;
-      setState({ ...nextState, settings: { ...initialState.settings, ...nextState.settings } });
+      setState({ ...nextState, settings: { ...initialState.settings, ...cleanLegacySettings(nextState.settings) } });
     }
     setHydrated(true);
   }); }, []);

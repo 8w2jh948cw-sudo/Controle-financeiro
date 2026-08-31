@@ -116,7 +116,6 @@ export const initialState: AppState = {
   goals,
   rules,
   settings: {
-    userName: "Vinícius",
     hiddenValues: false,
     diagnosticsEnabled: true,
     diagnosticMaxCards: 3,
