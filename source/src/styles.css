@@ -326,43 +326,44 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .money-input { min-height: 64px; background: var(--surface); border: 1px solid var(--input-border); border-radius: 17px; display: flex; align-items: center; padding: 0 15px; gap: 7px; }
 .money-input span { font-size: 17px; color: #8f9892; }
 .money-input input { border: 0; padding: 0; min-height: auto; font-size: 29px; font-weight: 800; letter-spacing: -1px; }
-.sheet:has(.transaction-form) { max-height: 96svh; padding-top: 6px; }
+.sheet:has(.transaction-form) { width: 100%; max-height: 96svh; padding: 5px 14px max(18px, env(safe-area-inset-bottom)); overflow-x: hidden; }
 .sheet:has(.transaction-form) .sheet-handle { margin-bottom: 9px; }
 .sheet:has(.transaction-form) > header { margin-bottom: 10px; align-items: center; }
-.sheet:has(.transaction-form) > header h2 { font-size: 20px; }
+.sheet:has(.transaction-form) > header h2 { font-size: 18px; }
 .sheet:has(.transaction-form) > header .icon-button { width: 34px; height: 34px; }
-.transaction-form { gap: 8px; }
-.transaction-kind-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
-.transaction-kind-picker button { min-width: 0; min-height: 48px; padding: 6px 7px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; text-align: left; cursor: pointer; }
+.transaction-form { width: 100%; min-width: 0; gap: 7px; }
+.transaction-kind-picker { width: 100%; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.transaction-kind-picker button { width: 100%; min-width: 0; min-height: 42px; padding: 4px 3px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 4px; text-align: left; cursor: pointer; overflow: hidden; }
+.transaction-kind-picker button > svg { width: 17px; height: 17px; flex: 0 0 auto; }
 .transaction-kind-picker button > span { min-width: 0; display: grid; gap: 2px; }
-.transaction-kind-picker strong { font-size: 10.5px; }
+.transaction-kind-picker strong { font-size: 10px; white-space: nowrap; }
 .transaction-kind-picker small { display: none; }
 .transaction-kind-picker button.active.expense { border-color: color-mix(in srgb, var(--expense-color) 50%, var(--line)); background: color-mix(in srgb, var(--expense-color) 12%, var(--surface)); color: var(--expense-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--expense-color) 12%, transparent); }
 .transaction-kind-picker button.active.income { border-color: color-mix(in srgb, var(--income-color) 50%, var(--line)); background: color-mix(in srgb, var(--income-color) 12%, var(--surface)); color: color-mix(in srgb, var(--income-color) 78%, #073a27); box-shadow: 0 0 0 2px color-mix(in srgb, var(--income-color) 12%, transparent); }
 .transaction-kind-picker button.active.transfer { border-color: color-mix(in srgb, var(--green-2) 42%, var(--line)); background: color-mix(in srgb, var(--green-2) 9%, var(--surface)); color: var(--green-2); box-shadow: 0 0 0 2px color-mix(in srgb, var(--green-2) 10%, transparent); }
-.transaction-amount-panel { padding: 10px 13px; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); box-shadow: 0 5px 16px rgba(21,49,37,.04); }
+.transaction-amount-panel { padding: 7px 2px 8px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; }
 .transaction-amount-panel > span { display: block; margin-bottom: 2px; color: var(--muted); font-size: 8px; font-weight: 850; letter-spacing: .7px; }
-.transaction-amount-panel .money-input { min-height: 48px; border: 0; padding: 0; background: transparent; }
+.transaction-amount-panel .money-input { min-height: 44px; border: 0; padding: 0; background: transparent; }
 .transaction-amount-panel .money-input span { font-size: 17px; font-weight: 750; }
 .transaction-amount-panel .money-input input { font-size: 30px; }
 .transaction-amount-panel > small { display: block; color: var(--muted); font-size: 9px; }
-.kind-expense .transaction-amount-panel { border-color: color-mix(in srgb, var(--expense-color) 24%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--expense-color) 7%, var(--surface)), var(--surface)); }
+.kind-expense .transaction-amount-panel { border-color: var(--line); background: transparent; }
 .kind-expense .transaction-amount-panel .money-input input { color: var(--expense-color); }
-.kind-income .transaction-amount-panel { border-color: color-mix(in srgb, var(--income-color) 28%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--income-color) 9%, var(--surface)), var(--surface)); }
+.kind-income .transaction-amount-panel { border-color: var(--line); background: transparent; }
 .kind-income .transaction-amount-panel .money-input input { color: color-mix(in srgb, var(--income-color) 78%, #073a27); }
-.transaction-form-section { padding: 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); display: grid; gap: 8px; }
-.transaction-form .form-field { gap: 4px; font-size: 10px; }
-.transaction-form .form-field input, .transaction-form .form-field select, .transaction-form .form-field textarea { min-height: 42px; border-radius: 12px; padding-inline: 10px; font-size: 12px; }
+.transaction-form-section { padding: 7px 0 2px; border: 0; border-radius: 0; background: transparent; display: grid; gap: 7px; }
+.transaction-form .form-field { min-width: 0; gap: 3px; font-size: 10px; }
+.transaction-form .form-field input, .transaction-form .form-field select, .transaction-form .form-field textarea { width: 100%; min-width: 0; min-height: 40px; border-radius: 10px; padding-inline: 9px; font-size: 16px; }
 .transaction-form .form-field textarea { min-height: 66px; padding-block: 9px; }
-.transaction-section-title { display: flex; align-items: center; gap: 8px; padding-bottom: 7px; border-bottom: 1px solid var(--line); }
-.transaction-section-title > span { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; color: var(--green-2); background: color-mix(in srgb, var(--green-2) 10%, var(--surface)); }
-.transaction-section-title > span svg { width: 15px; height: 15px; }
+.transaction-section-title { display: flex; align-items: center; gap: 5px; padding-bottom: 1px; border: 0; }
+.transaction-section-title > span { width: 21px; height: 21px; border-radius: 7px; display: grid; place-items: center; color: var(--green-2); background: transparent; }
+.transaction-section-title > span svg { width: 14px; height: 14px; }
 .transaction-section-title > div { display: grid; gap: 2px; }
-.transaction-section-title strong { font-size: 10.5px; }
+.transaction-section-title strong { font-size: 9px; letter-spacing: .65px; text-transform: uppercase; color: var(--muted); }
 .transaction-section-title small { display: none; }
-.category-field { display: grid; gap: 6px; }
+.category-field { display: grid; gap: 1px; }
 .inline-config-button { min-height: 27px; width: max-content; max-width: 100%; padding: 0 3px; border: 0; background: transparent; color: var(--green-2); display: flex; align-items: center; gap: 4px; font-size: 8.5px; font-weight: 800; cursor: pointer; }
-.transaction-advanced { border: 1px solid var(--line); border-radius: 19px; background: var(--surface); overflow: hidden; }
+.transaction-advanced { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
 .transaction-advanced > summary { min-height: 50px; padding: 7px 10px; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 8px; list-style: none; cursor: pointer; }
 .transaction-advanced > summary::-webkit-details-marker { display: none; }
 .transaction-advanced > summary > span { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-soft); color: var(--green-2); }
@@ -372,7 +373,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .transaction-advanced > summary > svg { color: var(--muted); transition: transform .2s ease; }
 .transaction-advanced[open] > summary > svg { transform: rotate(90deg); }
 .transaction-advanced-body { padding: 10px; border-top: 1px solid var(--line); background: var(--sheet); display: grid; gap: 8px; }
-.transaction-save-button { min-height: 50px; font-size: 12px; box-shadow: 0 7px 18px rgba(21,116,82,.15); }
+.transaction-save-button { min-height: 46px; font-size: 12px; box-shadow: none; border-radius: 12px; }
 .kind-expense .transaction-save-button { background: var(--expense-color); }
 .kind-income .transaction-save-button { background: color-mix(in srgb, var(--income-color) 78%, #075236); }
 .primary-button, .danger-button, .text-button { min-height: 52px; border: 0; border-radius: 16px; background: var(--green); color: #fff; font-weight: 800; font-size: 13px; display: flex; justify-content: center; align-items: center; gap: 7px; padding: 0 15px; cursor: pointer; }

@@ -369,7 +369,7 @@ function TransactionSheet({ state, kind, existing, onClose, onSave, onDelete, on
     } else onSave([base], existing?.id, learnedRule ? [learnedRule] : []);
   };
   const submit = (event: FormEvent) => { event.preventDefault(); save(false); };
-  return <Sheet title={existing ? "Editar lançamento" : "Adicionar lançamento"} onClose={onClose}>
+  return <Sheet title={existing ? "Editar" : "Adicionar"} onClose={onClose}>
     <form className={"form transaction-form kind-" + draftKind} onSubmit={submit}>
       <div className="transaction-kind-picker" role="tablist" aria-label="Tipo de lançamento">
         <button type="button" className={draftKind === "expense" ? "active expense" : "expense"} onClick={() => changeKind("expense")}><Icon name="arrowDown" size={21} /><span><strong>Saída</strong><small>Dinheiro gasto</small></span></button>
