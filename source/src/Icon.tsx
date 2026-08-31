@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export type IconName =
   | "home" | "receipt" | "plus" | "target" | "chart" | "homeTab" | "receiptTab" | "plusTab" | "planTab" | "analysisTab" | "analysisPieTab" | "eye" | "eyeOff"
-  | "settings" | "arrowUp" | "arrowDown" | "import" | "transfer" | "sparkles"
+  | "settings" | "arrowUp" | "arrowDown" | "arrowRight" | "import" | "transfer" | "sparkles"
   | "wallet" | "card" | "bank" | "search" | "close" | "check" | "edit"
   | "trash" | "chevron" | "food" | "basket" | "car" | "heart" | "smile"
   | "repeat" | "briefcase" | "income" | "alert" | "trend" | "down" | "up"
@@ -35,6 +35,7 @@ export function Icon({ name, size = 22, stroke = 2 }: { name: IconName; size?: n
     settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H3v-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V3h4v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></>,
     arrowUp: <><path d="M7 17 17 7M8 7h9v9"/></>,
     arrowDown: <><path d="m7 7 10 10M17 8v9H8"/></>,
+    arrowRight: <><path d="M5 12h14"/><path d="m14 7 5 5-5 5"/></>,
     import: <><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></>,
     transfer: <><path d="M7 7h11l-3-3M17 17H6l3 3"/></>,
     sparkles: <><path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z"/><path d="m19 14 .8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14ZM5 13l.7 2.3L8 16l-2.3.7L5 19l-.7-2.3L2 16l2.3-.7L5 13Z"/></>,

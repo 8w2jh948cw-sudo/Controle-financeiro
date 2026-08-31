@@ -90,7 +90,7 @@ function PigMark() {
 
 function AppHeader({ state, onSettings, onToggleValues, onDemoInfo }: { state: AppState; onSettings: () => void; onToggleValues: () => void; onDemoInfo: () => void }) {
   return <header className="app-header">
-    <div className="brand"><span className="brand-mark"><PigMark /></span><span><strong>Meu Dinheiro</strong><small>inteligente e simples</small></span></div>
+    <div className="brand"><span className="brand-mark"><PigMark /></span><strong>Meu Dinheiro</strong></div>
     <div className="header-actions">
       <button className="icon-button" onClick={onToggleValues} aria-label={state.settings.hiddenValues ? "Mostrar valores" : "Ocultar valores"}><Icon name={state.settings.hiddenValues ? "eyeOff" : "eye"} /></button>
       <button className="icon-button" onClick={onSettings} aria-label="Ajustes"><Icon name="settings" /></button>
@@ -136,21 +136,27 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
   const pendingCount = state.transactions.filter((transaction) => transaction.needsReview).length;
 
   return <main className="page home-page">
-    <MonthPicker value={month} onChange={setMonth} />
+    <div className="home-toolbar">
+      <MonthPicker value={month} onChange={setMonth} />
+      <button className="home-import-button" onClick={() => onModal({ type: "import" })}><Icon name="import" size={19} /><span>Importar</span></button>
+    </div>
 
     <section className="monthly-overview-card">
       <div className="monthly-overview-heading">
         <div><span className="eyebrow">RESUMO DO MÊS</span><h2>{monthLabel(month)}</h2></div>
-        <span className="available-icon"><Icon name="wallet" size={25} /></span>
       </div>
-      <div className="available-value">
-        <span className="available-label"><small>Disponível para usar agora</small><button onClick={() => onModal({ type: "availableInfo" })} aria-label="Entender o valor disponível"><Icon name="info" size={17} /></button></span>
-        <strong className={availableToUse < 0 ? "negative" : ""}>{hideableMoney(availableToUse, state.settings.hiddenValues)}</strong>
-      </div>
-      <div className="monthly-overview-grid">
-        <span><small>Entradas</small><strong className="income">{hideableMoney(totals.income, state.settings.hiddenValues)}</strong></span>
-        <span><small>Saídas</small><strong className="expense">{hideableMoney(totals.expense, state.settings.hiddenValues)}</strong></span>
-        <span><small>Resultado</small><strong className={result < 0 ? "expense" : "income"}>{result > 0 ? "+" : ""}{hideableMoney(result, state.settings.hiddenValues)}</strong></span>
+      <div className="money-flow">
+        <button className="flow-action income" onClick={() => onModal({ type: "transaction", kind: "income" })}>
+          <span className="flow-arrow"><Icon name="arrowRight" size={20} /></span><small>Entradas</small><strong>{hideableMoney(totals.income, state.settings.hiddenValues)}</strong><em>Registrar</em>
+        </button>
+        <div className="flow-balance">
+          <span className="available-label"><small>Disponível agora</small><button onClick={() => onModal({ type: "availableInfo" })} aria-label="Entender o valor disponível"><Icon name="info" size={15} /></button></span>
+          <strong className={availableToUse < 0 ? "negative" : ""}>{hideableMoney(availableToUse, state.settings.hiddenValues)}</strong>
+          <small className={"flow-result " + (result < 0 ? "expense" : "income")}>Mês: {result > 0 ? "+" : ""}{hideableMoney(result, state.settings.hiddenValues)}</small>
+        </div>
+        <button className="flow-action expense" onClick={() => onModal({ type: "transaction", kind: "expense" })}>
+          <span className="flow-arrow"><Icon name="arrowRight" size={20} /></span><small>Saídas</small><strong>{hideableMoney(totals.expense, state.settings.hiddenValues)}</strong><em>Registrar</em>
+        </button>
       </div>
     </section>
 
@@ -158,17 +164,12 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
       <span className="pending-review-icon"><Icon name="edit" /></span><span><strong>{pendingCount} {pendingCount === 1 ? "movimentação precisa" : "movimentações precisam"} de detalhes</strong><small>Complete títulos e categorias para melhorar seus diagnósticos.</small></span><span>Revisar <Icon name="chevron" size={15} /></span>
     </button>}
 
-    <section className="quick-grid" aria-label="Ações rápidas">
-      <button className="quick-card expense" onClick={() => onModal({ type: "transaction", kind: "expense" })}><Icon name="arrowDown" size={28} /><strong>Registrar<br/>gasto</strong></button>
-      <button className="quick-card income" onClick={() => onModal({ type: "transaction", kind: "income" })}><Icon name="arrowUp" size={28} /><strong>Registrar<br/>entrada</strong></button>
-      <button className="quick-card" onClick={() => onModal({ type: "import" })}><Icon name="import" size={28} /><strong>Importar<br/>extrato</strong><small>CSV, OFX ou QFX</small></button>
-      <button className="quick-card" onClick={() => onModal({ type: "transaction", kind: "transfer" })}><Icon name="transfer" size={28} /><strong>Transferir<br/>entre contas</strong></button>
-    </section>
+    <button className="transfer-shortcut" onClick={() => onModal({ type: "transaction", kind: "transfer" })}><Icon name="transfer" size={19} /><span><strong>Transferir entre contas</strong><small>Movimente dinheiro sem contar como entrada ou saída</small></span><Icon name="chevron" size={17} /></button>
 
     {state.settings.diagnosticsEnabled && homeDiagnostics.length > 0 && <section className="home-diagnostics">
       <div className="home-diagnostics-heading"><div><span className="eyebrow">DICAS E AVISOS</span><h2>Entenda seu mês</h2></div><button onClick={() => onTab("analysis")}>Ver todos</button></div>
       <div className="diagnostic-card-stack">{homeDiagnostics.map((diagnostic) => <button className={"diagnostic-card " + diagnostic.tone} key={diagnostic.id} onClick={() => onTab("analysis")}>
-        <span className="diagnostic-icon"><Icon name={diagnostic.icon as IconName} /></span><span><small>{diagnostic.tone === "warning" ? "AVISO" : diagnostic.tone === "positive" ? "BOA NOTÍCIA" : "DICA"} · SEM IA</small><strong>{diagnostic.title}</strong><p>{diagnostic.message}</p></span><Icon name="chevron" size={18} />
+        <span className="diagnostic-topline"><span className="diagnostic-icon"><Icon name={diagnostic.icon as IconName} /></span><span className="diagnostic-title"><small>{diagnostic.tone === "warning" ? "AVISO" : diagnostic.tone === "positive" ? "BOA NOTÍCIA" : "DICA"} · SEM IA</small><strong>{diagnostic.title}</strong></span><Icon name="chevron" size={18} /></span><p>{diagnostic.message}</p>
       </button>)}</div>
     </section>}
 
