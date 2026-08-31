@@ -4,7 +4,7 @@ import { emptyState, initialState } from "./data";
 import { Icon, type IconName } from "./Icon";
 import { isPlaceholderTitle, parseMoney, parseStatement, simplifyBankText } from "./importers";
 import { loadState, saveState } from "./storage";
-import type { Account, AccountType, AppState, Budget, CategoryRule, Goal, ImportCandidate, PaymentMethod, Transaction, TransactionKind } from "./types";
+import type { Account, AccountType, AppState, Budget, Category, CategoryRule, Goal, ImportCandidate, PaymentMethod, Transaction, TransactionKind } from "./types";
 
 type Tab = "home" | "transactions" | "plan" | "analysis";
 type PlanTab = "accounts" | "budgets" | "goals";
@@ -14,6 +14,7 @@ type Modal =
   | { type: "settings" }
   | { type: "navLab" }
   | { type: "rules" }
+  | { type: "categories" }
   | { type: "account"; account?: Account }
   | { type: "budget"; budget?: Budget }
   | { type: "goal"; goal?: Goal }
@@ -51,6 +52,12 @@ const toneColor: Record<string, string> = {
   blue: "#1677ff", yellow: "#ffc94d", orange: "#ff9f43", violet: "#8358f5", green: "#42b883",
   pink: "#ef5da8", indigo: "#4e7fea", teal: "#19a99a", coral: "#ff6f73", emerald: "#28a96b", slate: "#7d8797",
 };
+const categoryIconOptions: Array<{ value: IconName; label: string }> = [
+  { value: "home", label: "Casa" }, { value: "basket", label: "Compras" }, { value: "food", label: "Comida" },
+  { value: "car", label: "Transporte" }, { value: "heart", label: "Saúde" }, { value: "smile", label: "Lazer" },
+  { value: "repeat", label: "Recorrente" }, { value: "briefcase", label: "Trabalho" }, { value: "sparkles", label: "Especial" },
+  { value: "income", label: "Renda" }, { value: "wallet", label: "Carteira" }, { value: "more", label: "Outros" },
+];
 const navDefaults = {
   navCustomEnabled: false,
   navShowLabels: true,
@@ -201,7 +208,7 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
   </main>;
 }
 
-function TransactionsView({ state, month, setMonth, onEdit, reviewPending = false }: { state: AppState; month: string; setMonth: (month: string) => void; onEdit: (transaction: Transaction) => void; reviewPending?: boolean }) {
+function TransactionsView({ state, month, setMonth, onEdit, onCategories, reviewPending = false }: { state: AppState; month: string; setMonth: (month: string) => void; onEdit: (transaction: Transaction) => void; onCategories: () => void; reviewPending?: boolean }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "pending">(reviewPending ? "pending" : "all");
   useEffect(() => { if (reviewPending) setFilter("pending"); }, [reviewPending]);
@@ -212,7 +219,7 @@ function TransactionsView({ state, month, setMonth, onEdit, reviewPending = fals
     .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)), [state.transactions, month, filter, search]);
   const totals = monthTotals(state.transactions, month);
   return <main className="page">
-    <div className="page-title"><div><span className="eyebrow">EXTRATO</span><h1>Todos os lançamentos</h1></div><MonthPicker value={month} onChange={setMonth} /></div>
+    <div className="page-title"><div><span className="eyebrow">EXTRATO</span><h1>Todos os lançamentos</h1></div><div className="page-title-actions"><MonthPicker value={month} onChange={setMonth} /><button className="category-access-button" onClick={onCategories}><Icon name="filter" size={17} /> Categorias</button></div></div>
     <section className="mini-summary"><span><small>Entradas</small><strong className="income">{hideableMoney(totals.income, state.settings.hiddenValues)}</strong></span><span><small>Saídas</small><strong className="expense">{hideableMoney(totals.expense, state.settings.hiddenValues)}</strong></span><span><small>Resultado</small><strong>{hideableMoney(totals.income - totals.expense, state.settings.hiddenValues)}</strong></span></section>
     <label className="search-field"><Icon name="search" size={20} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nome ou observação" /></label>
     <div className="filter-chips"><button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>Todos</button><button className={filter === "expense" ? "active" : ""} onClick={() => setFilter("expense")}>Saídas</button><button className={filter === "income" ? "active" : ""} onClick={() => setFilter("income")}>Entradas</button><button className={filter === "pending" ? "active pending-filter" : "pending-filter"} onClick={() => setFilter("pending")}><Icon name="edit" size={15} /> Pendentes ({state.transactions.filter((item) => item.needsReview).length})</button></div>
@@ -226,6 +233,7 @@ function PlanView({ state, month, onModal }: { state: AppState; month: string; o
   return <main className="page">
     <div className="page-title"><div><span className="eyebrow">PLANEJAMENTO</span><h1>Organize o próximo passo</h1></div></div>
     <div className="segmented compact"><button className={section === "accounts" ? "active" : ""} onClick={() => setSection("accounts")}>Contas</button><button className={section === "budgets" ? "active" : ""} onClick={() => setSection("budgets")}>Limites</button><button className={section === "goals" ? "active" : ""} onClick={() => setSection("goals")}>Metas</button></div>
+    {section === "budgets" && <button className="category-access-button standalone" onClick={() => onModal({ type: "categories" })}><Icon name="filter" size={17} /> Ver e configurar categorias</button>}
     {section === "accounts" && <section className="stack-list">
       <button className="add-line" onClick={() => onModal({ type: "account" })}><Icon name="plus" size={19} /> Adicionar conta ou cartão</button>
       {state.accounts.map((account) => {
@@ -285,7 +293,7 @@ function ComparisonChart({ state, month, kind, count, onCount }: { state: AppSta
   </section>;
 }
 
-function AnalysisView({ state, month, setMonth, onComparisonMonths }: { state: AppState; month: string; setMonth: (month: string) => void; onComparisonMonths: (kind: "income" | "expense", count: number) => void }) {
+function AnalysisView({ state, month, setMonth, onCategories, onComparisonMonths }: { state: AppState; month: string; setMonth: (month: string) => void; onCategories: () => void; onComparisonMonths: (kind: "income" | "expense", count: number) => void }) {
   const items = categoryTotals(state, month);
   const total = items.reduce((sum, item) => sum + item.amount, 0);
   let cursor = 0;
@@ -298,7 +306,7 @@ function AnalysisView({ state, month, setMonth, onComparisonMonths }: { state: A
   return <main className="page">
     <div className="page-title analysis-title"><h1>Gráficos</h1></div>
     <section className="chart-card category-chart">
-      <div className="analysis-month-picker"><MonthPicker value={month} onChange={setMonth} /></div>
+      <div className="analysis-month-picker"><MonthPicker value={month} onChange={setMonth} /><button className="category-access-button icon-only" onClick={onCategories} aria-label="Ver e configurar categorias"><Icon name="filter" size={19} /></button></div>
       <div className="donut-wrap"><div className="donut" style={{ "--segments": `conic-gradient(${segments})` } as CSSProperties}><span><small>Total</small><strong>{state.settings.hiddenValues ? "••••" : money.format(total)}</strong></span></div></div>
       <div className="category-breakdown">{items.map((item) => {
         const share = total ? Math.round(item.amount / total * 100) : 0;
@@ -325,7 +333,7 @@ function Field({ label, children, hint }: { label: string; children: ReactNode; 
   return <label className="form-field"><span>{label}</span>{children}{hint && <small>{hint}</small>}</label>;
 }
 
-function TransactionSheet({ state, kind, existing, onClose, onSave, onDelete }: { state: AppState; kind: TransactionKind; existing?: Transaction; onClose: () => void; onSave: (transactions: Transaction[], replacedId?: string, learnedRules?: CategoryRule[]) => void; onDelete: (id: string) => void }) {
+function TransactionSheet({ state, kind, existing, onClose, onSave, onDelete, onState }: { state: AppState; kind: TransactionKind; existing?: Transaction; onClose: () => void; onSave: (transactions: Transaction[], replacedId?: string, learnedRules?: CategoryRule[]) => void; onDelete: (id: string) => void; onState: (state: AppState) => void }) {
   const [draftKind, setDraftKind] = useState<TransactionKind>(existing?.kind || kind);
   const [description, setDescription] = useState(existing?.description || "");
   const [place, setPlace] = useState(existing?.place || "");
@@ -340,6 +348,7 @@ function TransactionSheet({ state, kind, existing, onClose, onSave, onDelete }: 
   const [installments, setInstallments] = useState(existing?.installment?.total || 1);
   const [recurring, setRecurring] = useState(false);
   const [rememberRule, setRememberRule] = useState(false);
+  const [showCategories, setShowCategories] = useState(false);
   const value = Math.abs(parseMoney(amount));
 
   const changeKind = (next: TransactionKind) => { setDraftKind(next); if (next === "income") setCategoryId("salary"); if (next === "transfer") setCategoryId("other"); };
@@ -360,36 +369,61 @@ function TransactionSheet({ state, kind, existing, onClose, onSave, onDelete }: 
     } else onSave([base], existing?.id, learnedRule ? [learnedRule] : []);
   };
   const submit = (event: FormEvent) => { event.preventDefault(); save(false); };
-  return <Sheet title={existing ? "Editar lançamento" : "Novo lançamento"} subtitle={existing ? "As alterações ficam salvas neste aparelho." : "Simples agora, detalhado quando você precisar."} onClose={onClose}>
-    <form className="form" onSubmit={submit}>
-      <div className="segmented compact"><button type="button" className={draftKind === "expense" ? "active expense-tab" : ""} onClick={() => changeKind("expense")}>Saída</button><button type="button" className={draftKind === "income" ? "active income-tab" : ""} onClick={() => changeKind("income")}>Entrada</button><button type="button" className={draftKind === "transfer" ? "active" : ""} onClick={() => changeKind("transfer")}>Transferência</button></div>
-      <Field label="Valor"><div className="money-input"><span>R$</span><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" autoFocus={!existing} /></div>{!existing && draftKind === "expense" && installments > 1 && <small>{installments} parcelas de aproximadamente {money.format(value / installments || 0)}</small>}</Field>
+  return <Sheet title={existing ? "Editar lançamento" : "Adicionar lançamento"} onClose={onClose}>
+    <form className={"form transaction-form kind-" + draftKind} onSubmit={submit}>
+      <div className="transaction-kind-picker" role="tablist" aria-label="Tipo de lançamento">
+        <button type="button" className={draftKind === "expense" ? "active expense" : "expense"} onClick={() => changeKind("expense")}><Icon name="arrowDown" size={21} /><span><strong>Saída</strong><small>Dinheiro gasto</small></span></button>
+        <button type="button" className={draftKind === "income" ? "active income" : "income"} onClick={() => changeKind("income")}><Icon name="arrowUp" size={21} /><span><strong>Entrada</strong><small>Dinheiro recebido</small></span></button>
+        <button type="button" className={draftKind === "transfer" ? "active transfer" : "transfer"} onClick={() => changeKind("transfer")}><Icon name="transfer" size={21} /><span><strong>Transferir</strong><small>Entre suas contas</small></span></button>
+      </div>
+
+      <div className="transaction-amount-panel">
+        <span>{draftKind === "expense" ? "VALOR DA SAÍDA" : draftKind === "income" ? "VALOR DA ENTRADA" : "VALOR DA TRANSFERÊNCIA"}</span>
+        <div className="money-input"><span>R$</span><input inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="0,00" autoFocus={!existing} /></div>
+        {!existing && draftKind === "expense" && installments > 1 && <small>{installments} parcelas de aproximadamente {money.format(value / installments || 0)}</small>}
+      </div>
+
       {existing?.needsReview && <div className="review-banner"><Icon name="edit" size={18} /><span><strong>Este lançamento precisa de detalhes</strong><small>Complete o título e a categoria ou confirme que deseja mantê-lo assim.</small></span></div>}
-      <Field label={draftKind === "transfer" ? "Descrição" : "Título — o que foi?"}><input value={description} onChange={(event) => setDescription(event.target.value)} placeholder={draftKind === "income" ? "Ex.: Atendimento de unhas" : draftKind === "transfer" ? "Ex.: Guardar na reserva" : "Ex.: Produtos de limpeza"} /></Field>
-      {draftKind !== "transfer" && <Field label={draftKind === "income" ? "Origem (opcional)" : "Local (opcional)"}><input value={place} onChange={(event) => setPlace(event.target.value)} placeholder={draftKind === "income" ? "Ex.: Cliente Ana ou Hotmart" : "Ex.: Mercado Livre ou Restaurante Origami"} /></Field>}
-      <div className="form-grid"><Field label="Data"><input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></Field><Field label="Horário"><input type="time" value={time} onChange={(event) => setTime(event.target.value)} /></Field></div>
-      <Field label={draftKind === "transfer" ? "Conta de origem" : "Conta ou cartão"}><select value={accountId} onChange={(event) => { setAccountId(event.target.value); if (destinationAccountId === event.target.value) setDestinationAccountId(state.accounts.find((account) => account.id !== event.target.value)?.id || ""); }}>{state.accounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></Field>
-      {draftKind === "transfer" ? <Field label="Conta de destino"><select value={destinationAccountId} onChange={(event) => setDestinationAccountId(event.target.value)}>{state.accounts.filter((account) => account.id !== accountId && account.type !== "credit").map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></Field> : <>
-        <Field label="Categoria"><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>{state.categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></Field>
-        <Field label="Forma de pagamento"><select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}><option value="pix">Pix</option><option value="debit">Débito</option><option value="credit">Crédito</option><option value="cash">Dinheiro</option><option value="transfer">Transferência</option><option value="other">Outro</option></select></Field>
-      </>}
-      {!existing && draftKind === "expense" && <Field label="Parcelamento"><select value={installments} onChange={(event) => { setInstallments(Number(event.target.value)); if (Number(event.target.value) > 1) setRecurring(false); }}>{Array.from({ length: 24 }, (_, index) => <option key={index + 1} value={index + 1}>{index ? `${index + 1} parcelas` : "À vista"}</option>)}</select></Field>}
-      {!existing && draftKind !== "transfer" && installments === 1 && <label className="toggle-row"><span><strong>Repetir pelos próximos 6 meses</strong><small>Útil para salário, aluguel e assinaturas.</small></span><input type="checkbox" checked={recurring} onChange={(event) => setRecurring(event.target.checked)} /></label>}
-      <Field label="Observação (opcional)"><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Detalhes que podem ser úteis depois" rows={3} /></Field>
-      {existing?.originalDescription && <details className="bank-description"><summary>Ver descrição original do banco</summary><p>{existing.originalDescription}</p></details>}
-      {existing?.originalDescription && <SettingToggle compact title="Lembrar para próximas importações" description="Usa este local, categoria e título em descrições parecidas." checked={rememberRule} onChange={setRememberRule} />}
-      <button className="primary-button" type="submit" disabled={!description.trim() || !value}>Salvar lançamento</button>
+
+      <section className="transaction-form-section">
+        <div className="transaction-section-title"><span><Icon name="edit" size={18} /></span><div><strong>Informações principais</strong><small>O que aconteceu e onde</small></div></div>
+        <Field label={draftKind === "transfer" ? "Descrição" : "Título — o que foi?"}><input value={description} onChange={(event) => setDescription(event.target.value)} placeholder={draftKind === "income" ? "Ex.: Atendimento de unhas" : draftKind === "transfer" ? "Ex.: Guardar na reserva" : "Ex.: Produtos de limpeza"} /></Field>
+        {draftKind !== "transfer" && <Field label={draftKind === "income" ? "Origem (opcional)" : "Local (opcional)"}><input value={place} onChange={(event) => setPlace(event.target.value)} placeholder={draftKind === "income" ? "Ex.: Cliente Ana ou Hotmart" : "Ex.: Mercado Livre ou Restaurante Origami"} /></Field>}
+        {draftKind !== "transfer" && <div className="category-field"><Field label="Categoria"><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>{state.categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></Field><button className="inline-config-button" type="button" onClick={() => setShowCategories(true)}><Icon name="filter" size={16} /> Ver e configurar categorias</button></div>}
+      </section>
+
+      <section className="transaction-form-section">
+        <div className="transaction-section-title"><span><Icon name="wallet" size={18} /></span><div><strong>Pagamento e data</strong><small>De onde saiu ou para onde entrou</small></div></div>
+        <Field label={draftKind === "transfer" ? "Conta de origem" : "Conta ou cartão"}><select value={accountId} onChange={(event) => { setAccountId(event.target.value); if (destinationAccountId === event.target.value) setDestinationAccountId(state.accounts.find((account) => account.id !== event.target.value)?.id || ""); }}>{state.accounts.map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></Field>
+        {draftKind === "transfer" ? <Field label="Conta de destino"><select value={destinationAccountId} onChange={(event) => setDestinationAccountId(event.target.value)}>{state.accounts.filter((account) => account.id !== accountId && account.type !== "credit").map((account) => <option value={account.id} key={account.id}>{account.name}</option>)}</select></Field> : <Field label="Forma de pagamento"><select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}><option value="pix">Pix</option><option value="debit">Débito</option><option value="credit">Crédito</option><option value="cash">Dinheiro</option><option value="transfer">Transferência</option><option value="other">Outro</option></select></Field>}
+        <div className="form-grid"><Field label="Data"><input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></Field><Field label="Horário"><input type="time" value={time} onChange={(event) => setTime(event.target.value)} /></Field></div>
+      </section>
+
+      <details className="transaction-advanced" open={!!existing}>
+        <summary><span><Icon name="more" size={19} /></span><div><strong>Mais opções</strong><small>Parcelamento, repetição e observações</small></div><Icon name="chevron" size={17} /></summary>
+        <div className="transaction-advanced-body">
+          {!existing && draftKind === "expense" && <Field label="Parcelamento"><select value={installments} onChange={(event) => { setInstallments(Number(event.target.value)); if (Number(event.target.value) > 1) setRecurring(false); }}>{Array.from({ length: 24 }, (_, index) => <option key={index + 1} value={index + 1}>{index ? `${index + 1} parcelas` : "À vista"}</option>)}</select></Field>}
+          {!existing && draftKind !== "transfer" && installments === 1 && <label className="toggle-row"><span><strong>Repetir pelos próximos 6 meses</strong><small>Útil para salário, aluguel e assinaturas.</small></span><input type="checkbox" checked={recurring} onChange={(event) => setRecurring(event.target.checked)} /></label>}
+          <Field label="Observação (opcional)"><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Detalhes que podem ser úteis depois" rows={3} /></Field>
+          {existing?.originalDescription && <details className="bank-description"><summary>Ver descrição original do banco</summary><p>{existing.originalDescription}</p></details>}
+          {existing?.originalDescription && <SettingToggle compact title="Lembrar para próximas importações" description="Usa este local, categoria e título em descrições parecidas." checked={rememberRule} onChange={setRememberRule} />}
+        </div>
+      </details>
+
+      <button className="primary-button transaction-save-button" type="submit" disabled={!description.trim() || !value}><Icon name="check" size={19} /> Salvar lançamento</button>
       {existing?.needsReview && <button className="secondary-review-button" type="button" onClick={() => save(true)}><Icon name="check" size={18} /> Confirmar assim mesmo</button>}
       {existing && <button className="danger-button" type="button" onClick={() => onDelete(existing.id)}><Icon name="trash" size={18} /> Excluir lançamento</button>}
     </form>
+    {showCategories && <CategoryManagerSheet state={state} onClose={() => setShowCategories(false)} onState={onState} />}
   </Sheet>;
 }
 
-function ImportSheet({ state, onClose, onImport }: { state: AppState; onClose: () => void; onImport: (items: ImportCandidate[]) => void }) {
+function ImportSheet({ state, onClose, onImport, onState }: { state: AppState; onClose: () => void; onImport: (items: ImportCandidate[]) => void; onState: (state: AppState) => void }) {
   const [accountId, setAccountId] = useState(state.accounts.find((account) => account.type !== "credit")?.id || state.accounts[0]?.id || "");
   const [filename, setFilename] = useState("");
   const [items, setItems] = useState<ImportCandidate[]>([]);
   const [error, setError] = useState("");
+  const [showCategories, setShowCategories] = useState(false);
   const updateItem = (tempId: string, patch: Partial<ImportCandidate>) => setItems((current) => current.map((candidate) => candidate.tempId === tempId ? { ...candidate, ...patch } : candidate));
   const updateDetails = (item: ImportCandidate, patch: Partial<ImportCandidate>) => {
     const next = { ...item, ...patch };
@@ -417,6 +451,7 @@ function ImportSheet({ state, onClose, onImport }: { state: AppState; onClose: (
   return <Sheet title="Importar extrato" subtitle="O arquivo é lido somente no aparelho. Nada é enviado para bancos ou servidores." onClose={onClose} wide>
     <div className="form import-form">
       <div className="privacy-note"><Icon name="rule" /><span><strong>O app aprende com suas correções</strong><small>Regras anteriores preenchem local, título e categoria. O que estiver incerto pode ser revisado depois.</small></span></div>
+      <button className="category-access-button standalone import-categories" type="button" onClick={() => setShowCategories(true)}><Icon name="filter" size={17} /> Ver e configurar categorias</button>
       <Field label="Conta do extrato"><select value={accountId} onChange={(event) => { setAccountId(event.target.value); setItems([]); setFilename(""); }}>{state.accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></Field>
       <label className="file-picker"><Icon name="upload" size={26} /><strong>{filename || "Escolher arquivo CSV, OFX ou QFX"}</strong><small>Formatos usados pela maioria dos bancos</small><input type="file" accept=".csv,.ofx,.qfx,text/csv" onChange={handleFile} /></label>
       <button className="text-button" type="button" onClick={downloadExample}><Icon name="download" size={17} /> Baixar CSV de exemplo</button>
@@ -442,6 +477,7 @@ function ImportSheet({ state, onClose, onImport }: { state: AppState; onClose: (
         <button className="primary-button" disabled={!selected.length} onClick={() => onImport(selected)}>Importar {selected.length} {selected.length === 1 ? "lançamento" : "lançamentos"}{pendingCount ? " e revisar depois" : ""}</button>
       </>}
     </div>
+    {showCategories && <CategoryManagerSheet state={state} onClose={() => setShowCategories(false)} onState={onState} />}
   </Sheet>;
 }
 
@@ -474,6 +510,48 @@ function RulesSheet({ state, onClose, onChange }: { state: AppState; onClose: ()
     <Field label="Categoria"><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>{state.categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></Field>
     <button className="primary-button" disabled={!keyword.trim()} onClick={() => { onChange([{ id: uid("rule"), keyword: keyword.trim(), categoryId, place: place.trim() || undefined, title: title.trim() || undefined, matchMode }, ...state.rules]); setKeyword(""); setPlace(""); setTitle(""); }}>Adicionar regra</button>
   </div><div className="rules-list">{state.rules.map((rule) => <div key={rule.id}><span><strong>“{rule.keyword}”</strong><small>{rule.place ? rule.place + " · " : ""}{rule.title ? rule.title + " · " : ""}{state.categories.find((category) => category.id === rule.categoryId)?.name}</small></span><button onClick={() => onChange(state.rules.filter((item) => item.id !== rule.id))}><Icon name="trash" size={18} /></button></div>)}</div></div></Sheet>;
+}
+
+function CategoryManagerSheet({ state, onClose, onState }: { state: AppState; onClose: () => void; onState: (state: AppState) => void }) {
+  const [newName, setNewName] = useState("");
+  const [newIcon, setNewIcon] = useState<IconName>("wallet");
+  const [newTone, setNewTone] = useState("slate");
+  const updateCategory = (id: string, patch: Partial<Category>) => onState({ ...state, demoMode: false, categories: state.categories.map((category) => category.id === id ? { ...category, ...patch } : category) });
+  const addCategory = (event: FormEvent) => {
+    event.preventDefault();
+    if (!newName.trim()) return;
+    onState({ ...state, demoMode: false, categories: [...state.categories, { id: uid("category"), name: newName.trim(), icon: newIcon, tone: newTone }] });
+    setNewName("");
+    setNewIcon("wallet");
+    setNewTone("slate");
+  };
+  const removeCategory = (id: string) => {
+    if (id === "other" || !window.confirm("Excluir esta categoria? Os lançamentos dela passarão para Outros.")) return;
+    onState({
+      ...state,
+      demoMode: false,
+      categories: state.categories.filter((category) => category.id !== id),
+      transactions: state.transactions.map((transaction) => transaction.categoryId === id ? { ...transaction, categoryId: "other", needsReview: true } : transaction),
+      budgets: state.budgets.filter((budget) => budget.categoryId !== id),
+      rules: state.rules.map((rule) => rule.categoryId === id ? { ...rule, categoryId: "other" } : rule),
+    });
+  };
+  return <Sheet title="Categorias" subtitle="Crie, renomeie e personalize. As alterações são salvas automaticamente." onClose={onClose} wide>
+    <form className="category-create" onSubmit={addCategory}>
+      <Field label="Nova categoria"><input value={newName} onChange={(event) => setNewName(event.target.value)} placeholder="Ex.: Produtos de limpeza" /></Field>
+      <div className="form-grid"><Field label="Ícone"><select value={newIcon} onChange={(event) => setNewIcon(event.target.value as IconName)}>{categoryIconOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></Field><Field label="Cor"><select value={newTone} onChange={(event) => setNewTone(event.target.value)}>{Object.keys(toneColor).map((tone) => <option value={tone} key={tone}>{tone}</option>)}</select></Field></div>
+      <button className="primary-button" disabled={!newName.trim()}><Icon name="plus" size={18} /> Adicionar categoria</button>
+    </form>
+    <div className="category-manager-list">{state.categories.map((category) => <details className="category-editor" key={category.id}>
+      <summary><span className={"category-icon tone-" + category.tone}><Icon name={category.icon as IconName} size={20} /></span><span><strong>{category.name}</strong><small>Toque para editar</small></span><Icon name="chevron" size={18} /></summary>
+      <div className="category-editor-body">
+        <Field label="Nome"><input value={category.name} onChange={(event) => updateCategory(category.id, { name: event.target.value })} /></Field>
+        <div className="form-grid"><Field label="Ícone"><select value={category.icon} onChange={(event) => updateCategory(category.id, { icon: event.target.value })}>{categoryIconOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></Field><Field label="Cor"><select value={category.tone} onChange={(event) => updateCategory(category.id, { tone: event.target.value })}>{Object.keys(toneColor).map((tone) => <option value={tone} key={tone}>{tone}</option>)}</select></Field></div>
+        <div className="category-color-preview" aria-label="Prévia da cor">{Object.entries(toneColor).map(([tone, color]) => <button type="button" key={tone} className={category.tone === tone ? "active" : ""} style={{ background: color }} onClick={() => updateCategory(category.id, { tone })} aria-label={tone} />)}</div>
+        {category.id === "other" ? <p className="protected-category"><Icon name="info" size={16} /> “Outros” permanece disponível para lançamentos sem categoria identificada.</p> : <button className="danger-button compact-danger" type="button" onClick={() => removeCategory(category.id)}><Icon name="trash" size={17} /> Excluir categoria</button>}
+      </div>
+    </details>)}</div>
+  </Sheet>;
 }
 
 function downloadBlob(content: string, filename: string, type = "application/json") { const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 500); }
@@ -698,15 +776,16 @@ export default function App() {
   return <div className="app-shell" style={{ "--income-color": state.settings.incomeColor, "--expense-color": state.settings.expenseColor } as CSSProperties}>
     <AppHeader state={state} onSettings={() => setModal({ type: "settings" })} onDemoInfo={() => setModal({ type: "demoInfo" })} onToggleValues={() => setState((current) => ({ ...current, settings: { ...current.settings, hiddenValues: !current.settings.hiddenValues } }))} />
     {tab === "home" && <HomeView state={state} month={month} setMonth={setMonth} onModal={setModal} onTab={setTab} onReviewPending={() => { const latestPending = state.transactions.filter((item) => item.needsReview).sort((a, b) => b.date.localeCompare(a.date))[0]; if (latestPending) setMonth(latestPending.date.slice(0, 7)); setReviewPending(true); setTab("transactions"); }} />}
-    {tab === "transactions" && <TransactionsView state={state} month={month} setMonth={setMonth} reviewPending={reviewPending} onEdit={(transaction) => setModal({ type: "transaction", kind: transaction.kind, transaction })} />}
+    {tab === "transactions" && <TransactionsView state={state} month={month} setMonth={setMonth} reviewPending={reviewPending} onCategories={() => setModal({ type: "categories" })} onEdit={(transaction) => setModal({ type: "transaction", kind: transaction.kind, transaction })} />}
     {tab === "plan" && <PlanView state={state} month={month} onModal={setModal} />}
-    {tab === "analysis" && <AnalysisView state={state} month={month} setMonth={setMonth} onComparisonMonths={(kind, count) => setState((current) => ({ ...current, settings: { ...current.settings, [kind === "income" ? "incomeComparisonMonths" : "expenseComparisonMonths"]: count } }))} />}
+    {tab === "analysis" && <AnalysisView state={state} month={month} setMonth={setMonth} onCategories={() => setModal({ type: "categories" })} onComparisonMonths={(kind, count) => setState((current) => ({ ...current, settings: { ...current.settings, [kind === "income" ? "incomeComparisonMonths" : "expenseComparisonMonths"]: count } }))} />}
     <BottomNav active={tab} settings={state.settings} onChange={(next) => { if (next === "transactions") setReviewPending(false); setTab(next); }} onAdd={() => setModal({ type: "transaction", kind: "expense" })} />
-    {modal?.type === "transaction" && <TransactionSheet state={state} kind={modal.kind} existing={modal.transaction} onClose={() => setModal(null)} onSave={saveTransactions} onDelete={deleteTransaction} />}
-    {modal?.type === "import" && <ImportSheet state={state} onClose={() => setModal(null)} onImport={importTransactions} />}
+    {modal?.type === "transaction" && <TransactionSheet state={state} kind={modal.kind} existing={modal.transaction} onClose={() => setModal(null)} onSave={saveTransactions} onDelete={deleteTransaction} onState={setState} />}
+    {modal?.type === "import" && <ImportSheet state={state} onClose={() => setModal(null)} onImport={importTransactions} onState={setState} />}
     {modal?.type === "settings" && <SettingsSheet state={state} onClose={() => setModal(null)} onState={setState} onRules={() => setModal({ type: "rules" })} onNavLab={() => setModal({ type: "navLab" })} />}
     {modal?.type === "navLab" && <NavLabSheet state={state} onClose={() => setModal({ type: "settings" })} onState={setState} />}
     {modal?.type === "rules" && <RulesSheet state={state} onClose={() => setModal({ type: "settings" })} onChange={(rules) => setState((current) => ({ ...current, rules }))} />}
+    {modal?.type === "categories" && <CategoryManagerSheet state={state} onClose={() => setModal(null)} onState={setState} />}
     {modal?.type === "account" && <AccountSheet state={state} account={modal.account} onClose={() => setModal(null)} onSave={(account) => setAndClose("accounts", account, account.id)} onDelete={(account) => { setState((current) => ({ ...current, accounts: current.accounts.filter((item) => item.id !== account.id) })); setModal(null); }} />}
     {modal?.type === "budget" && <BudgetSheet state={state} budget={modal.budget} onClose={() => setModal(null)} onSave={(budget) => setAndClose("budgets", budget, budget.id)} onDelete={(id) => { setState((current) => ({ ...current, budgets: current.budgets.filter((item) => item.id !== id) })); setModal(null); }} />}
     {modal?.type === "goal" && <GoalSheet goal={modal.goal} onClose={() => setModal(null)} onSave={(goal) => setAndClose("goals", goal, goal.id)} onDelete={(id) => { setState((current) => ({ ...current, goals: current.goals.filter((item) => item.id !== id) })); setModal(null); }} />}

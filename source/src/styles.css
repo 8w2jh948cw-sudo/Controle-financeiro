@@ -209,6 +209,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 .page-title { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 14px; margin: 5px 2px 19px; }
 .page-title .month-picker { margin: 0; }
+.page-title-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.category-access-button { min-height: 42px; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--green-2) 26%, var(--line)); border-radius: 14px; background: color-mix(in srgb, var(--green-2) 7%, var(--surface)); color: var(--green-2); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 10px; font-weight: 800; cursor: pointer; }
+.category-access-button.standalone { width: 100%; margin: -5px 0 14px; }
+.category-access-button.import-categories { margin: 0; }
+.category-access-button.icon-only { width: 50px; min-height: 50px; padding: 0; border-radius: 17px; }
 .mini-summary { background: var(--green); color: #fff; border-radius: 23px; padding: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
 .mini-summary span { min-width: 0; display: grid; gap: 4px; }
 .mini-summary small { font-size: 9px; opacity: .68; }
@@ -242,7 +247,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .chart-card > .section-heading > strong { font-size: 15px; white-space: nowrap; }
 .analysis-title { justify-content: center; margin-bottom: 14px; text-align: center; }
 .analysis-title h1 { margin: 0; }
-.analysis-month-picker { display: flex; justify-content: center; padding: 14px 14px 0; }
+.analysis-month-picker { display: flex; justify-content: center; gap: 8px; padding: 14px 14px 0; }
 .analysis-month-picker .month-picker { margin: 0; box-shadow: none; }
 .donut-wrap { display: grid; place-items: center; padding: 18px 0 25px; }
 .donut { width: min(58vw, 235px); aspect-ratio: 1; border-radius: 50%; background: var(--segments); display: grid; place-items: center; position: relative; transform: rotate(-90deg); }
@@ -321,6 +326,46 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .money-input { min-height: 64px; background: var(--surface); border: 1px solid var(--input-border); border-radius: 17px; display: flex; align-items: center; padding: 0 15px; gap: 7px; }
 .money-input span { font-size: 17px; color: #8f9892; }
 .money-input input { border: 0; padding: 0; min-height: auto; font-size: 29px; font-weight: 800; letter-spacing: -1px; }
+.transaction-form { gap: 12px; }
+.transaction-kind-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.transaction-kind-picker button { min-width: 0; min-height: 68px; padding: 9px 7px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 7px; text-align: left; cursor: pointer; }
+.transaction-kind-picker button > span { min-width: 0; display: grid; gap: 2px; }
+.transaction-kind-picker strong { font-size: 11px; }
+.transaction-kind-picker small { font-size: 7.5px; white-space: nowrap; }
+.transaction-kind-picker button.active.expense { border-color: color-mix(in srgb, var(--expense-color) 50%, var(--line)); background: color-mix(in srgb, var(--expense-color) 12%, var(--surface)); color: var(--expense-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--expense-color) 12%, transparent); }
+.transaction-kind-picker button.active.income { border-color: color-mix(in srgb, var(--income-color) 50%, var(--line)); background: color-mix(in srgb, var(--income-color) 12%, var(--surface)); color: color-mix(in srgb, var(--income-color) 78%, #073a27); box-shadow: 0 0 0 2px color-mix(in srgb, var(--income-color) 12%, transparent); }
+.transaction-kind-picker button.active.transfer { border-color: color-mix(in srgb, var(--green-2) 42%, var(--line)); background: color-mix(in srgb, var(--green-2) 9%, var(--surface)); color: var(--green-2); box-shadow: 0 0 0 2px color-mix(in srgb, var(--green-2) 10%, transparent); }
+.transaction-amount-panel { padding: 16px; border: 1px solid var(--line); border-radius: 21px; background: var(--surface); box-shadow: 0 7px 22px rgba(21,49,37,.05); }
+.transaction-amount-panel > span { display: block; margin-bottom: 7px; color: var(--muted); font-size: 9px; font-weight: 850; letter-spacing: .8px; }
+.transaction-amount-panel .money-input { min-height: 66px; border: 0; padding: 0; background: transparent; }
+.transaction-amount-panel .money-input span { font-size: 20px; font-weight: 750; }
+.transaction-amount-panel .money-input input { font-size: 38px; }
+.transaction-amount-panel > small { display: block; color: var(--muted); font-size: 9px; }
+.kind-expense .transaction-amount-panel { border-color: color-mix(in srgb, var(--expense-color) 24%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--expense-color) 7%, var(--surface)), var(--surface)); }
+.kind-expense .transaction-amount-panel .money-input input { color: var(--expense-color); }
+.kind-income .transaction-amount-panel { border-color: color-mix(in srgb, var(--income-color) 28%, var(--line)); background: linear-gradient(135deg, color-mix(in srgb, var(--income-color) 9%, var(--surface)), var(--surface)); }
+.kind-income .transaction-amount-panel .money-input input { color: color-mix(in srgb, var(--income-color) 78%, #073a27); }
+.transaction-form-section { padding: 14px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); display: grid; gap: 12px; }
+.transaction-section-title { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.transaction-section-title > span { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; color: var(--green-2); background: color-mix(in srgb, var(--green-2) 10%, var(--surface)); }
+.transaction-section-title > div { display: grid; gap: 2px; }
+.transaction-section-title strong { font-size: 12px; }
+.transaction-section-title small { color: var(--muted); font-size: 8.5px; }
+.category-field { display: grid; gap: 6px; }
+.inline-config-button { min-height: 34px; width: max-content; max-width: 100%; padding: 0 4px; border: 0; background: transparent; color: var(--green-2); display: flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 800; cursor: pointer; }
+.transaction-advanced { border: 1px solid var(--line); border-radius: 19px; background: var(--surface); overflow: hidden; }
+.transaction-advanced > summary { min-height: 64px; padding: 10px 13px; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 10px; list-style: none; cursor: pointer; }
+.transaction-advanced > summary::-webkit-details-marker { display: none; }
+.transaction-advanced > summary > span { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--surface-soft); color: var(--green-2); }
+.transaction-advanced > summary > div { display: grid; gap: 2px; }
+.transaction-advanced > summary strong { font-size: 11px; }
+.transaction-advanced > summary small { color: var(--muted); font-size: 8.5px; }
+.transaction-advanced > summary > svg { color: var(--muted); transition: transform .2s ease; }
+.transaction-advanced[open] > summary > svg { transform: rotate(90deg); }
+.transaction-advanced-body { padding: 13px; border-top: 1px solid var(--line); background: var(--sheet); display: grid; gap: 12px; }
+.transaction-save-button { min-height: 58px; font-size: 14px; box-shadow: 0 9px 22px rgba(21,116,82,.18); }
+.kind-expense .transaction-save-button { background: var(--expense-color); }
+.kind-income .transaction-save-button { background: color-mix(in srgb, var(--income-color) 78%, #075236); }
 .primary-button, .danger-button, .text-button { min-height: 52px; border: 0; border-radius: 16px; background: var(--green); color: #fff; font-weight: 800; font-size: 13px; display: flex; justify-content: center; align-items: center; gap: 7px; padding: 0 15px; cursor: pointer; }
 .primary-button:disabled { opacity: .42; cursor: default; }
 .danger-button { background: #fff0ef; color: #d9575d; }
@@ -438,6 +483,24 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .rules-list strong { font-size: 11px; }
 .rules-list small { color: #949b96; font-size: 9px; }
 .rules-list button { border: 0; background: #fff0ef; color: #dc5d61; border-radius: 10px; width: 34px; height: 34px; display: grid; place-items: center; }
+.category-create { padding: 13px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); display: grid; gap: 11px; }
+.category-create .primary-button { min-height: 46px; }
+.category-manager-list { display: grid; gap: 8px; }
+.category-editor { border: 1px solid var(--line); border-radius: 17px; background: var(--surface); overflow: hidden; }
+.category-editor > summary { min-height: 66px; padding: 10px 12px; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 11px; list-style: none; cursor: pointer; }
+.category-editor > summary::-webkit-details-marker { display: none; }
+.category-editor > summary > span:nth-child(2) { display: grid; gap: 3px; }
+.category-editor > summary strong { font-size: 11.5px; }
+.category-editor > summary small { color: var(--muted); font-size: 8.5px; }
+.category-editor > summary > svg { color: var(--muted); transition: transform .2s ease; }
+.category-editor[open] > summary > svg { transform: rotate(90deg); }
+.category-editor-body { padding: 13px; border-top: 1px solid var(--line); background: var(--sheet); display: grid; gap: 11px; }
+.category-color-preview { display: grid; grid-template-columns: repeat(11, 1fr); gap: 5px; }
+.category-color-preview button { aspect-ratio: 1; min-width: 0; padding: 0; border: 3px solid var(--surface); border-radius: 50%; box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+.category-color-preview button.active { box-shadow: 0 0 0 3px var(--green-2); }
+.compact-danger { min-height: 43px; font-size: 11px; }
+.protected-category { margin: 0; padding: 10px; border-radius: 13px; background: var(--surface-tint); color: var(--muted); display: flex; align-items: flex-start; gap: 7px; font-size: 9px; line-height: 1.4; }
+.protected-category svg { flex: 0 0 auto; }
 
 .settings-button { min-height: 67px; width: 100%; border: 1px solid var(--line); border-radius: 17px; background: var(--surface); padding: 11px 13px; display: flex; align-items: center; gap: 11px; text-align: left; cursor: pointer; }
 .settings-button > span:nth-child(2) { display: grid; gap: 3px; flex: 1; }
