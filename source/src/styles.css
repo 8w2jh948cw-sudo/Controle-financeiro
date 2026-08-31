@@ -90,7 +90,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .eyebrow { color: #a0a6b2; letter-spacing: 1.25px; font-size: 11px; font-weight: 800; }
 .monthly-overview-card { background: var(--surface); border: 1px solid var(--line); border-radius: 27px; box-shadow: var(--shadow); padding: 17px 12px 12px; margin-bottom: 12px; position: relative; overflow: hidden; }
 .monthly-overview-card::before { content: ""; width: 180px; height: 180px; border-radius: 50%; position: absolute; right: -82px; top: -100px; background: color-mix(in srgb, var(--income-color) 13%, var(--surface)); pointer-events: none; }
-.monthly-overview-heading { display: flex; justify-content: space-between; align-items: center; position: relative; padding: 0 5px 12px; }
+.monthly-overview-heading { display: flex; justify-content: center; align-items: center; position: relative; padding: 0 5px 12px; text-align: center; }
 .monthly-overview-heading h2 { margin: 5px 0 0; font-size: 17px; letter-spacing: -.4px; }
 .available-icon { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; color: var(--green-2); background: color-mix(in srgb, var(--income-color) 13%, var(--surface)); }
 .available-value { display: grid; gap: 5px; margin: 23px 0 20px; position: relative; }
@@ -111,11 +111,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .available-note svg { flex: 0 0 auto; margin-top: 1px; }
 .money-flow { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.25fr) minmax(0, .92fr); align-items: stretch; gap: 7px; }
 .flow-action, .flow-balance { min-width: 0; min-height: 132px; border-radius: 19px; padding: 11px 8px; }
-.flow-action { border: 1px solid var(--line); display: flex; flex-direction: column; align-items: flex-start; text-align: left; cursor: pointer; overflow: hidden; }
+.flow-action { border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer; overflow: hidden; }
 .flow-action.income { color: color-mix(in srgb, var(--income-color) 76%, #063724); background: color-mix(in srgb, var(--income-color) 16%, var(--surface)); border-color: color-mix(in srgb, var(--income-color) 28%, var(--line)); }
 .flow-action.expense { color: #fff; background: var(--expense-color); border-color: transparent; }
-.flow-arrow { width: 30px; height: 30px; margin-bottom: auto; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, currentColor 11%, transparent); }
-.flow-action small { margin-top: 9px; font-size: 9px; opacity: .72; }
+.flow-arrow { width: 42px; height: 42px; margin-bottom: 9px; border-radius: 13px; display: grid; place-items: center; background: color-mix(in srgb, currentColor 11%, transparent); }
+.flow-action small { font-size: 9px; opacity: .72; }
 .flow-action strong { width: 100%; margin-top: 3px; font-size: clamp(10px, 3vw, 13px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .flow-action em { margin-top: 6px; font-size: 10px; font-style: normal; font-weight: 850; }
 .flow-balance { background: var(--green); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
@@ -152,8 +152,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .quick-card.income { background: color-mix(in srgb, var(--income-color) 26%, var(--surface)); color: color-mix(in srgb, var(--income-color) 68%, #082f20); border-color: color-mix(in srgb, var(--income-color) 35%, var(--line)); }
 
 .home-diagnostics { margin-bottom: 18px; }
-.home-diagnostics-heading { padding: 2px 3px 11px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
-.home-diagnostics-heading h2 { margin: 4px 0 0; font-size: 18px; letter-spacing: -.45px; }
+.home-diagnostics-heading { padding: 2px 3px 11px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.home-diagnostics-heading h2 { margin: 0; font-size: 18px; line-height: 1.2; letter-spacing: -.45px; }
 .home-diagnostics-heading button { border: 0; background: none; color: var(--green-2); font-size: 12px; font-weight: 750; padding: 4px 0; cursor: pointer; }
 .diagnostic-card-stack { display: grid; gap: 10px; }
 .diagnostic-card { width: 100%; border: 1px solid #dfe8df; background: linear-gradient(135deg, #f7fff7, #fff); border-radius: 23px; padding: 12px 14px 13px; box-shadow: 0 7px 24px rgba(21, 49, 37, .05); display: grid; gap: 8px; text-align: left; cursor: pointer; }
@@ -173,6 +173,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .section-heading { padding: 21px 20px 13px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .section-heading h2 { margin: 4px 0 0; font-size: 17px; letter-spacing: -.4px; }
 .section-heading > button { border: 0; background: none; color: var(--green); font-weight: 700; font-size: 12px; padding: 3px 0; cursor: pointer; }
+.recent-list .section-heading { padding: 16px 18px 7px; align-items: center; }
+.recent-list .section-heading h2 { margin: 0; }
+.recent-list .transaction-row:first-of-type { padding-top: 8px; }
 .transaction-row { width: 100%; min-height: 76px; border: 0; border-top: 1px solid var(--line); background: transparent; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 18px; text-align: left; cursor: pointer; }
 .transaction-row:first-of-type { border-top: 0; }
 .category-icon, .account-icon { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; flex: 0 0 auto; background: #eef2ef; color: #66736d; }
