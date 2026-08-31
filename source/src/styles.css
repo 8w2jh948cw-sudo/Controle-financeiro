@@ -89,7 +89,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 .eyebrow { color: #a0a6b2; letter-spacing: 1.25px; font-size: 11px; font-weight: 800; }
 .monthly-overview-card { background: var(--surface); border: 1px solid var(--line); border-radius: 27px; box-shadow: var(--shadow); padding: 17px 12px 12px; margin-bottom: 12px; position: relative; overflow: hidden; }
-.monthly-overview-card::before { content: ""; width: 180px; height: 180px; border-radius: 50%; position: absolute; right: -82px; top: -100px; background: color-mix(in srgb, var(--income-color) 13%, var(--surface)); pointer-events: none; }
 .monthly-overview-heading { display: flex; justify-content: center; align-items: center; position: relative; padding: 0 5px 12px; text-align: center; }
 .monthly-overview-heading h2 { margin: 5px 0 0; font-size: 17px; letter-spacing: -.4px; }
 .available-icon { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; color: var(--green-2); background: color-mix(in srgb, var(--income-color) 13%, var(--surface)); }
