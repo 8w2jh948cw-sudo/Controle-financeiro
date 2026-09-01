@@ -17,6 +17,7 @@ concurrency:
 env:
   STABLE_RELEASE: "1.0.0"
   BETA_LABEL: "1.1.0-beta.2"
+  PUBLIC_BASE: "https://8w2jh948cw-sudo.github.io/Controle-financeiro"
 
 jobs:
   build-and-deploy:
@@ -92,29 +93,31 @@ jobs:
             test -s "$file"
           done
 
-          # O app Oficial continua vindo da branch stable; a Beta vem da main e usa banco próprio.
           grep -q 'app-environment.*official' _site/index.html
           grep -q 'app-environment.*beta' _site/beta/index.html
           grep -q 'meu-dinheiro-inteligente-beta' _site/beta/assets/*.js
           ! grep -q '"meu-dinheiro-inteligente-state"' _site/beta/assets/*.js
           ! cmp -s _site/apple-touch-icon.png _site/beta/apple-touch-icon.png
 
-          # Durante desenvolvimento nenhum bundle registra novo Service Worker.
           ! grep -R -q 'serviceWorker.register' _site/assets _site/beta/assets
           grep -q 'Service Worker aposentado durante o desenvolvimento' _site/sw.js
           grep -q 'Service Worker aposentado durante o desenvolvimento' _site/beta/sw.js
           ! grep -q 'addEventListener("fetch"' _site/sw.js
           ! grep -q 'addEventListener("fetch"' _site/beta/sw.js
 
-          # Menu é uma página independente: somente links, sem React/app, banco ou JavaScript.
+          # Regras críticas do manual atualizado para o Menu.
           grep -q 'finance-tools-page.*menu' _site/menu.html
+          grep -q 'Central de Diagnóstico' _site/menu.html
           grep -q 'repeat(2,minmax(0,1fr))' _site/menu.html
           ! grep -q '<script' _site/menu.html
           ! grep -q 'assets/' _site/menu.html
           ! grep -q 'app-shell' _site/menu.html
           ! grep -q 'id="root"' _site/menu.html
+          ! grep -q 'http-equiv="refresh"' _site/menu.html
+          ! grep -q "location.replace('./menu.html')" _site/menu.html
+          ! grep -q 'location.href' _site/menu.html
+          ! grep -q 'window.location' _site/menu.html
 
-          # Boot resiliente e diagnóstico real do navegador.
           grep -q 'mdBootFallback' _site/index.html
           grep -q 'mdBootFallback' _site/beta/index.html
           grep -q 'Ambiente web' _site/index.html
@@ -123,13 +126,11 @@ jobs:
           grep -q 'Caches reais' _site/diagnostico/index.html
           grep -q 'href="../menu.html">Menu principal' _site/beta/index.html
 
-          # Recuperação preserva dados; a Beta nunca toca no banco Oficial.
           grep -q 'Seus dados foram preservados' _site/recover.html
           grep -q 'NÃO toca no app Oficial\|Não toca no Oficial\|NÃO TOCA NO OFICIAL' _site/beta/recover.html _site/diagnostico/index.html
           ! grep -R -q 'localStorage.clear' _site/recover.html _site/beta/recover.html
           ! grep -R -q 'indexedDB.deleteDatabase' _site/recover.html _site/beta/recover.html
 
-          # Manifestos e ícones devem estar corretos para o iPhone/PWA.
           python3 - <<'PY'
           from pathlib import Path
           import json
@@ -149,7 +150,6 @@ jobs:
           print('Manifestos e dimensões de ícones validados.')
           PY
 
-          # Todos os links internos do Menu e Diagnóstico precisam existir no artifact final.
           python3 - <<'PY'
           from pathlib import Path
           from html.parser import HTMLParser
@@ -181,8 +181,6 @@ jobs:
           print('Todos os links internos do Menu e Diagnóstico foram validados.')
           PY
 
-          echo "Manual validado: Oficial ${STABLE_RELEASE} preservado; Beta ${BETA_LABEL} isolada; SW desativado; menu independente; boot, recuperação, diagnóstico e ícones conferidos."
-
       - name: Habilitar e configurar Pages
         uses: actions/configure-pages@v5
         with:
@@ -196,3 +194,52 @@ jobs:
       - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Validar URLs públicas reais
+        run: |
+          set -e
+          echo "Aguardando propagação do GitHub Pages..."
+          sleep 5
+
+          fetch_public() {
+            local url="$1"
+            local out="$2"
+            local ok=0
+            for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              code=$(curl -L -sS -o "$out" -w '%{http_code}' --connect-timeout 10 --max-time 20 "$url" || true)
+              echo "[$attempt] $url -> HTTP $code / $(wc -c < "$out" 2>/dev/null || echo 0) bytes"
+              if [ "$code" = "200" ] && [ -s "$out" ]; then ok=1; break; fi
+              sleep 5
+            done
+            if [ "$ok" != "1" ]; then
+              echo "FALHA: URL pública não ficou disponível: $url"
+              sed -n '1,80p' "$out" 2>/dev/null || true
+              return 1
+            fi
+          }
+
+          fetch_public "$PUBLIC_BASE/menu.html" /tmp/public-menu.html
+          fetch_public "$PUBLIC_BASE/" /tmp/public-official.html
+          fetch_public "$PUBLIC_BASE/beta/" /tmp/public-beta.html
+          fetch_public "$PUBLIC_BASE/diagnostico/" /tmp/public-diag.html
+          fetch_public "$PUBLIC_BASE/safe.html" /tmp/public-safe.html
+          fetch_public "$PUBLIC_BASE/beta/safe.html" /tmp/public-beta-safe.html
+
+          echo "--- MENU PÚBLICO: primeiras linhas ---"
+          sed -n '1,40p' /tmp/public-menu.html
+
+          # O conteúdo público precisa ser o Menu real, e não o app ou um redirect.
+          grep -q 'finance-tools-page.*menu' /tmp/public-menu.html
+          grep -q 'Central de Diagnóstico' /tmp/public-menu.html
+          ! grep -q 'id="root"' /tmp/public-menu.html
+          ! grep -q 'app-shell' /tmp/public-menu.html
+          ! grep -q 'http-equiv="refresh"' /tmp/public-menu.html
+          ! grep -q "location.replace('./menu.html')" /tmp/public-menu.html
+
+          grep -q 'app-environment.*official' /tmp/public-official.html
+          grep -q 'app-environment.*beta' /tmp/public-beta.html
+          grep -q 'Diagnóstico' /tmp/public-diag.html
+          grep -q 'Modo seguro' /tmp/public-safe.html
+          grep -q 'Modo seguro' /tmp/public-beta-safe.html
+
+          echo "[OK] GitHub Pages está servindo o Menu real e todas as páginas críticas com HTTP 200."
