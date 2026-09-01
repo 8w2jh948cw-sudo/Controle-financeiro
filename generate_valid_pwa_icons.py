@@ -2,6 +2,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path('_site')
+SIZE = 512
 
 
 def font(size: int):
@@ -16,106 +17,82 @@ def font(size: int):
     return ImageFont.load_default()
 
 
-def gradient(size: int):
-    img = Image.new('RGBA', (size, size), (248, 251, 249, 255))
+def soft_background():
+    img = Image.new('RGBA', (SIZE, SIZE), (249, 251, 250, 255))
     px = img.load()
-    for y in range(size):
-        for x in range(size):
-            left = 1 - x / max(1, size - 1)
-            right = x / max(1, size - 1)
-            top = 1 - y / max(1, size - 1)
-            r = int(246 + 4 * top + 1 * right)
-            g = int(248 + 5 * left + 2 * top)
-            b = int(247 + 4 * right + 2 * top)
+    for y in range(SIZE):
+        for x in range(SIZE):
+            # Fundo claro contínuo, sem moldura branca externa.
+            left = 1 - x / (SIZE - 1)
+            right = x / (SIZE - 1)
+            bottom = y / (SIZE - 1)
+            r = int(249 + 3 * right)
+            g = int(250 + 3 * left)
+            b = int(250 + 3 * right + 1 * bottom)
             px[x, y] = (min(r,255), min(g,255), min(b,255), 255)
     return img
 
 
+def arrow_layer(up: bool, color, glow_color):
+    layer = Image.new('RGBA', (SIZE, SIZE), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    if up:
+        # seta verde equilibrada
+        d.rounded_rectangle((194, 162, 254, 386), radius=30, fill=color)
+        d.polygon([(224, 105), (158, 184), (190, 184), (190, 202), (258, 202), (258, 184), (290, 184)], fill=color)
+    else:
+        # seta vermelha equilibrada
+        d.rounded_rectangle((310, 140, 370, 364), radius=30, fill=color)
+        d.polygon([(340, 421), (274, 342), (306, 342), (306, 324), (374, 324), (374, 342), (406, 342)], fill=color)
+
+    glow = layer.copy().filter(ImageFilter.GaussianBlur(16))
+    # reduz opacidade do brilho mantendo somente halo local das setas
+    alpha = glow.getchannel('A').point(lambda a: int(a * 0.28))
+    glow.putalpha(alpha)
+    tinted = Image.new('RGBA', (SIZE, SIZE), glow_color)
+    tinted.putalpha(alpha)
+    return tinted, layer
+
+
 def make_icon(beta: bool) -> Image.Image:
-    size = 512
-    base = gradient(size)
-
-    # Sombra suave da placa principal.
-    shadow = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    sd = ImageDraw.Draw(shadow)
-    sd.rounded_rectangle((43, 50, 469, 476), radius=105, fill=(23, 62, 48, 38))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(22))
-    base.alpha_composite(shadow)
-
-    draw = ImageDraw.Draw(base)
-    draw.rounded_rectangle((38, 38, 474, 474), radius=108, fill=(255, 255, 255, 235), outline=(221, 230, 225, 255), width=3)
-
-    # Reflexo/glassmorphism discreto.
-    glass = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glass)
-    gd.ellipse((-40, -180, 520, 260), fill=(255, 255, 255, 92))
-    glass = glass.filter(ImageFilter.GaussianBlur(18))
-    base.alpha_composite(glass)
+    base = soft_background()
     draw = ImageDraw.Draw(base)
 
-    green = (47, 190, 112, 255)
-    green_dark = (23, 143, 83, 255)
-    red = (255, 104, 114, 255)
-    red_dark = (224, 72, 87, 255)
-    blue = (52, 120, 246, 255)
-    divider = (218, 226, 221, 255)
+    # Faixa lateral sutil inspirada no ícone escolhido, sem contorno externo.
+    draw.rectangle((0, 0, 105, SIZE), fill=(242, 246, 247, 185))
 
-    # Separador central.
-    draw.rounded_rectangle((253, 116, 259, 360), radius=3, fill=divider)
+    # Três marcadores laterais neutros.
+    for y in (130, 256, 382):
+        draw.rounded_rectangle((38, y - 18, 115, y + 18), radius=18, fill=(223, 229, 231, 220))
 
-    # Barras de entrada (verde) e saída (vermelho), equilibradas.
-    for box, color in (
-        ((105, 247, 151, 345), green),
-        ((163, 195, 209, 345), green_dark),
-        ((303, 195, 349, 345), red_dark),
-        ((361, 247, 407, 345), red),
-    ):
-        draw.rounded_rectangle(box, radius=20, fill=color)
+    green = (43, 198, 116, 235)
+    red = (255, 88, 98, 235)
+    gglow, garrow = arrow_layer(True, green, (48, 203, 120, 255))
+    rglow, rarrow = arrow_layer(False, red, (255, 86, 99, 255))
+    base.alpha_composite(gglow)
+    base.alpha_composite(rglow)
+    base.alpha_composite(garrow)
+    base.alpha_composite(rarrow)
 
-    # Setas com o mesmo peso visual para positivo e negativo.
-    draw.line((128, 194, 128, 137), fill=green_dark, width=18)
-    draw.polygon([(128, 112), (96, 151), (160, 151)], fill=green_dark)
-    draw.line((384, 138, 384, 195), fill=red_dark, width=18)
-    draw.polygon([(384, 220), (352, 181), (416, 181)], fill=red_dark)
-
-    # Medalhão central neutro para unir os dois lados.
-    coin_shadow = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    cd = ImageDraw.Draw(coin_shadow)
-    cd.ellipse((185, 302, 327, 444), fill=(22, 65, 49, 38))
-    coin_shadow = coin_shadow.filter(ImageFilter.GaussianBlur(13))
-    base.alpha_composite(coin_shadow)
-    draw = ImageDraw.Draw(base)
-    draw.ellipse((181, 294, 331, 444), fill=(255, 255, 255, 245), outline=(218, 228, 222, 255), width=3)
-
-    # Símbolo financeiro simples e legível em tamanhos pequenos.
-    f = font(62)
-    label = '$'
-    bbox = draw.textbbox((0, 0), label, font=f)
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    draw.text((256 - tw / 2, 369 - th / 2 - 5), label, font=f, fill=green_dark)
-
-    # Selo da Beta; a versão Oficial fica sem selo.
+    # Somente a Beta recebe o selo. Sem sombra, borda ou reflexo adicional.
     if beta:
-        badge_shadow = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-        bd = ImageDraw.Draw(badge_shadow)
-        bd.rounded_rectangle((319, 392, 469, 459), radius=28, fill=(30, 65, 150, 70))
-        badge_shadow = badge_shadow.filter(ImageFilter.GaussianBlur(10))
-        base.alpha_composite(badge_shadow)
         draw = ImageDraw.Draw(base)
-        draw.rounded_rectangle((313, 384, 467, 451), radius=28, fill=blue)
-        bf = font(31)
+        badge = (340, 438, 501, 502)
+        draw.rounded_rectangle(badge, radius=27, fill=(52, 120, 246, 255))
+        f = font(30)
         text = 'BETA'
-        bb = draw.textbbox((0, 0), text, font=bf)
-        bw, bh = bb[2] - bb[0], bb[3] - bb[1]
-        draw.text((390 - bw / 2, 418 - bh / 2 - 2), text, font=bf, fill=(255, 255, 255, 255))
+        bb = draw.textbbox((0, 0), text, font=f)
+        tw, th = bb[2] - bb[0], bb[3] - bb[1]
+        cx = (badge[0] + badge[2]) / 2
+        cy = (badge[1] + badge[3]) / 2
+        draw.text((cx - tw / 2, cy - th / 2 - 2), text, font=f, fill=(255, 255, 255, 255))
 
-    return base.convert('RGBA')
+    return base
 
 
 def write(target: Path, beta: bool):
     target.mkdir(parents=True, exist_ok=True)
-    image = make_icon(beta)
-    image.save(target / 'apple-touch-icon.png', format='PNG', optimize=True)
+    make_icon(beta).save(target / 'apple-touch-icon.png', format='PNG', optimize=True)
 
 
 if not ROOT.exists():
@@ -123,4 +100,4 @@ if not ROOT.exists():
 
 write(ROOT, beta=False)
 write(ROOT / 'beta', beta=True)
-print('[OK] Ícones PWA válidos gerados: Oficial e Beta visualmente distintos.')
+print('[OK] Ícones corrigidos: sem moldura branca externa e sem reflexo curvo; Beta apenas com selo.')
