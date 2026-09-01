@@ -38,6 +38,14 @@ jobs:
       - name: Montar ambientes isolados
         run: python3 prepare_environments.py
 
+      - name: Restaurar bytes originais dos ícones
+        run: |
+          set -e
+          curl -fsSL "https://raw.githubusercontent.com/8w2jh948cw-sudo/Controle-financeiro/stable/apple-touch-icon.png" -o /tmp/official-icon.png
+          curl -fsSL "https://raw.githubusercontent.com/8w2jh948cw-sudo/Controle-financeiro/main/apple-touch-icon.png" -o /tmp/beta-icon.png
+          cp /tmp/official-icon.png _site/apple-touch-icon.png
+          cp /tmp/beta-icon.png _site/beta/apple-touch-icon.png
+
       - name: Preparar ferramentas de ícones
         run: python3 -m pip install --quiet pillow
 
@@ -91,8 +99,8 @@ jobs:
           grep -q 'app-environment.*beta' _site/beta/index.html
           grep -q 'meu-dinheiro-inteligente-beta' _site/beta/assets/*.js
           ! grep -q '"meu-dinheiro-inteligente-state"' _site/beta/assets/*.js
-          cmp -s _site/apple-touch-icon.png _stable/apple-touch-icon.png
-          cmp -s _site/beta/apple-touch-icon.png apple-touch-icon.png
+          cmp -s _site/apple-touch-icon.png /tmp/official-icon.png
+          cmp -s _site/beta/apple-touch-icon.png /tmp/beta-icon.png
           ! cmp -s _site/apple-touch-icon.png _site/beta/apple-touch-icon.png
 
           # Durante desenvolvimento nenhum bundle registra novo Service Worker.
