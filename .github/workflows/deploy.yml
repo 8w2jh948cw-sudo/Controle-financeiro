@@ -16,7 +16,7 @@ concurrency:
 
 env:
   STABLE_RELEASE: "1.0.0"
-  BETA_LABEL: "1.1.0-beta.1"
+  BETA_LABEL: "1.1.0-beta.2"
 
 jobs:
   build-and-deploy:
@@ -38,27 +38,81 @@ jobs:
       - name: Montar ambientes isolados
         run: python3 prepare_environments.py
 
-      - name: Conferir Oficial Beta e Diagnóstico
+      - name: Conferir páginas, ícones e isolamento
         run: |
-          test -s _site/index.html
-          test -s _site/launch.html
-          test -s _site/recover.html
-          test -s _site/safe.html
-          test -s _site/environment.json
-          test -s _site/beta/index.html
-          test -s _site/beta/launch.html
-          test -s _site/beta/recover.html
-          test -s _site/beta/safe.html
-          test -s _site/beta/beta-tools.js
-          test -s _site/beta/environment.json
-          test -s _site/diagnostico/index.html
-          test -s _site/ambientes.json
+          set -e
+          for file in \
+            _site/index.html \
+            _site/menu.html \
+            _site/menu/index.html \
+            _site/diagnostico/index.html \
+            _site/launch.html \
+            _site/recover.html \
+            _site/safe.html \
+            _site/environment.json \
+            _site/ambientes.json \
+            _site/apple-touch-icon.png \
+            _site/icons/menu.svg \
+            _site/icons/diagnostic.svg \
+            _site/icons/launch.svg \
+            _site/icons/recover.svg \
+            _site/icons/safe.svg \
+            _site/beta/index.html \
+            _site/beta/launch.html \
+            _site/beta/recover.html \
+            _site/beta/safe.html \
+            _site/beta/beta-tools.js \
+            _site/beta/environment.json \
+            _site/beta/apple-touch-icon.png \
+            _site/beta/icons/launch.svg \
+            _site/beta/icons/recover.svg \
+            _site/beta/icons/safe.svg
+          do
+            test -s "$file"
+          done
+
           grep -q 'app-environment.*official' _site/index.html
           grep -q 'app-environment.*beta' _site/beta/index.html
           grep -q 'meu-dinheiro-inteligente-beta' _site/beta/assets/*.js
           ! grep -q '"meu-dinheiro-inteligente-state"' _site/beta/assets/*.js
-          grep -q 'BETA · DADOS ISOLADOS' _site/diagnostico/index.html
-          echo "Oficial ${STABLE_RELEASE} congelado; Beta ${BETA_LABEL} isolada e pronta."
+          grep -q 'Oficial → Beta' _site/menu.html
+          grep -q 'NÃO toca no app Oficial\|Não toca no Oficial\|NÃO TOCA NO OFICIAL' _site/beta/recover.html _site/diagnostico/index.html
+          cmp -s _site/apple-touch-icon.png _stable/apple-touch-icon.png
+          cmp -s _site/beta/apple-touch-icon.png apple-touch-icon.png
+          ! cmp -s _site/apple-touch-icon.png _site/beta/apple-touch-icon.png
+
+          python3 - <<'PY'
+          from pathlib import Path
+          from html.parser import HTMLParser
+          from urllib.parse import urlsplit
+
+          root = Path('_site')
+          pages = [root/'menu.html', root/'diagnostico/index.html']
+
+          class Links(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.links=[]
+              def handle_starttag(self, tag, attrs):
+                  if tag == 'a':
+                      href = dict(attrs).get('href')
+                      if href: self.links.append(href)
+
+          for page in pages:
+              p = Links(); p.feed(page.read_text(encoding='utf-8'))
+              for href in p.links:
+                  if href.startswith(('http:', 'https:', 'mailto:', '#')): continue
+                  clean = urlsplit(href).path
+                  target = (page.parent / clean).resolve()
+                  if clean.endswith('/'):
+                      target = target / 'index.html'
+                  if target.is_dir():
+                      target = target / 'index.html'
+                  if not target.exists():
+                      raise SystemExit(f'Link quebrado em {page}: {href} -> {target}')
+          print('Todos os links internos do Menu e Diagnóstico foram validados.')
+          PY
+
+          echo "Oficial ${STABLE_RELEASE} preservado; Beta ${BETA_LABEL} isolada; menu e ferramentas validados."
 
       - name: Habilitar e configurar Pages
         uses: actions/configure-pages@v5
