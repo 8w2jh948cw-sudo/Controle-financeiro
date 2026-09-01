@@ -38,11 +38,15 @@ jobs:
       - name: Montar ambientes isolados
         run: python3 prepare_environments.py
 
-      - name: Conferir páginas, ícones e isolamento
+      - name: Proteger rotas das ferramentas
+        run: python3 postbuild_route_guard.py
+
+      - name: Conferir páginas, ícones, rotas e isolamento
         run: |
           set -e
           for file in \
             _site/index.html \
+            _site/central.html \
             _site/menu.html \
             _site/menu/index.html \
             _site/diagnostico/index.html \
@@ -76,6 +80,11 @@ jobs:
           grep -q 'meu-dinheiro-inteligente-beta' _site/beta/assets/*.js
           ! grep -q '"meu-dinheiro-inteligente-state"' _site/beta/assets/*.js
           grep -q 'Oficial → Beta' _site/menu.html
+          grep -q 'finance-tools-page.*menu' _site/menu.html
+          grep -q 'data-finance-menu-route-guard' _site/menu.html
+          grep -q 'central-clean-entry' _site/central.html
+          grep -q 'acceptsHtml && !isAppNavigation' _site/sw.js
+          grep -q 'acceptsHtml && !isAppNavigation' _site/beta/sw.js
           grep -q 'NÃO toca no app Oficial\|Não toca no Oficial\|NÃO TOCA NO OFICIAL' _site/beta/recover.html _site/diagnostico/index.html
           cmp -s _site/apple-touch-icon.png _stable/apple-touch-icon.png
           cmp -s _site/beta/apple-touch-icon.png apple-touch-icon.png
@@ -87,7 +96,7 @@ jobs:
           from urllib.parse import urlsplit
 
           root = Path('_site')
-          pages = [root/'menu.html', root/'diagnostico/index.html']
+          pages = [root/'menu.html', root/'menu/index.html', root/'diagnostico/index.html']
 
           class Links(HTMLParser):
               def __init__(self):
@@ -112,7 +121,7 @@ jobs:
           print('Todos os links internos do Menu e Diagnóstico foram validados.')
           PY
 
-          echo "Oficial ${STABLE_RELEASE} preservado; Beta ${BETA_LABEL} isolada; menu e ferramentas validados."
+          echo "Oficial ${STABLE_RELEASE} preservado; Beta ${BETA_LABEL} isolada; menu protegido contra fallback do app."
 
       - name: Habilitar e configurar Pages
         uses: actions/configure-pages@v5
