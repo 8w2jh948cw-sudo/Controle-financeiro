@@ -2,7 +2,7 @@ name: Publicar Meu Dinheiro
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -11,25 +11,65 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: "pages-meu-dinheiro"
   cancel-in-progress: true
 
+env:
+  STABLE_RELEASE: "1.0.0"
+  BETA_LABEL: "1.1.0-beta.1"
+
 jobs:
-  deploy:
+  build-and-deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Preparar site
+      - name: Checkout do desenvolvimento Beta
+        uses: actions/checkout@v4
+
+      - name: Checkout da versão Oficial congelada
+        uses: actions/checkout@v4
+        with:
+          ref: stable
+          path: _stable
+          persist-credentials: false
+
+      - name: Montar ambientes isolados
+        run: python3 prepare_environments.py
+
+      - name: Conferir Oficial Beta e Diagnóstico
         run: |
-          mkdir -p _site/assets
-          cp index.html 404.html manifest.webmanifest icon.svg apple-touch-icon.png sw.js .nojekyll _site/
-          cp assets/* _site/assets/
-      - uses: actions/upload-pages-artifact@v3
+          test -s _site/index.html
+          test -s _site/launch.html
+          test -s _site/recover.html
+          test -s _site/safe.html
+          test -s _site/environment.json
+          test -s _site/beta/index.html
+          test -s _site/beta/launch.html
+          test -s _site/beta/recover.html
+          test -s _site/beta/safe.html
+          test -s _site/beta/beta-tools.js
+          test -s _site/beta/environment.json
+          test -s _site/diagnostico/index.html
+          test -s _site/ambientes.json
+          grep -q 'app-environment.*official' _site/index.html
+          grep -q 'app-environment.*beta' _site/beta/index.html
+          grep -q 'meu-dinheiro-inteligente-beta' _site/beta/assets/*.js
+          ! grep -q '"meu-dinheiro-inteligente-state"' _site/beta/assets/*.js
+          grep -q 'BETA · DADOS ISOLADOS' _site/diagnostico/index.html
+          echo "Oficial ${STABLE_RELEASE} congelado; Beta ${BETA_LABEL} isolada e pronta."
+
+      - name: Habilitar e configurar Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Enviar site completo
+        uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+
       - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4
