@@ -38,21 +38,19 @@ jobs:
       - name: Montar ambientes isolados
         run: python3 prepare_environments.py
 
-      - name: Restaurar bytes originais dos ícones
-        run: |
-          set -e
-          curl -fsSL "https://raw.githubusercontent.com/8w2jh948cw-sudo/Controle-financeiro/stable/apple-touch-icon.png" -o /tmp/official-icon.png
-          curl -fsSL "https://raw.githubusercontent.com/8w2jh948cw-sudo/Controle-financeiro/main/apple-touch-icon.png" -o /tmp/beta-icon.png
-          cp /tmp/official-icon.png _site/apple-touch-icon.png
-          cp /tmp/beta-icon.png _site/beta/apple-touch-icon.png
-
       - name: Preparar ferramentas de ícones
         run: python3 -m pip install --quiet pillow
 
+      - name: Gerar PNGs válidos para iPhone e PWA
+        run: |
+          python3 -m py_compile generate_valid_pwa_icons.py
+          python3 generate_valid_pwa_icons.py
+
       - name: Aplicar manual de estabilidade PWA
         run: |
-          python3 -m py_compile manual_pwa_hardening.py
+          python3 -m py_compile manual_pwa_hardening.py post_hardening_fixes.py
           python3 manual_pwa_hardening.py
+          python3 post_hardening_fixes.py
 
       - name: Conferir arquitetura, dados, menu e ícones
         run: |
@@ -94,13 +92,11 @@ jobs:
             test -s "$file"
           done
 
-          # Oficial vem da branch stable; Beta vem da main e usa armazenamento próprio.
+          # O app Oficial continua vindo da branch stable; a Beta vem da main e usa banco próprio.
           grep -q 'app-environment.*official' _site/index.html
           grep -q 'app-environment.*beta' _site/beta/index.html
           grep -q 'meu-dinheiro-inteligente-beta' _site/beta/assets/*.js
           ! grep -q '"meu-dinheiro-inteligente-state"' _site/beta/assets/*.js
-          cmp -s _site/apple-touch-icon.png /tmp/official-icon.png
-          cmp -s _site/beta/apple-touch-icon.png /tmp/beta-icon.png
           ! cmp -s _site/apple-touch-icon.png _site/beta/apple-touch-icon.png
 
           # Durante desenvolvimento nenhum bundle registra novo Service Worker.
@@ -110,7 +106,7 @@ jobs:
           ! grep -q 'addEventListener("fetch"' _site/sw.js
           ! grep -q 'addEventListener("fetch"' _site/beta/sw.js
 
-          # Menu é página independente: somente links, sem app shell, DB ou JavaScript.
+          # Menu é uma página independente: somente links, sem React/app, banco ou JavaScript.
           grep -q 'finance-tools-page.*menu' _site/menu.html
           grep -q 'repeat(2,minmax(0,1fr))' _site/menu.html
           ! grep -q '<script' _site/menu.html
@@ -118,21 +114,22 @@ jobs:
           ! grep -q 'app-shell' _site/menu.html
           ! grep -q 'id="root"' _site/menu.html
 
-          # Boot resiliente e diagnóstico real.
+          # Boot resiliente e diagnóstico real do navegador.
           grep -q 'mdBootFallback' _site/index.html
           grep -q 'mdBootFallback' _site/beta/index.html
           grep -q 'Ambiente web' _site/index.html
           grep -q 'Interface funcional' _site/index.html
           grep -q 'Registros reais de SW' _site/diagnostico/index.html
           grep -q 'Caches reais' _site/diagnostico/index.html
+          grep -q 'href="../menu.html">Menu principal' _site/beta/index.html
 
-          # Recuperação preserva dados e a Beta nunca toca no Oficial.
+          # Recuperação preserva dados; a Beta nunca toca no banco Oficial.
           grep -q 'Seus dados foram preservados' _site/recover.html
           grep -q 'NÃO toca no app Oficial\|Não toca no Oficial\|NÃO TOCA NO OFICIAL' _site/beta/recover.html _site/diagnostico/index.html
           ! grep -R -q 'localStorage.clear' _site/recover.html _site/beta/recover.html
           ! grep -R -q 'indexedDB.deleteDatabase' _site/recover.html _site/beta/recover.html
 
-          # Manifestos devem abrir o próprio ambiente, com ícones 192/512 e apple-touch-icon 180.
+          # Manifestos e ícones devem estar corretos para o iPhone/PWA.
           python3 - <<'PY'
           from pathlib import Path
           import json
@@ -145,6 +142,7 @@ jobs:
               assert manifest['scope'] == './'
               sizes = {icon['sizes'] for icon in manifest['icons']}
               assert {'192x192', '512x512'} <= sizes
+              assert Image.open(base/'apple-touch-icon.png').size == (512, 512)
               assert Image.open(base/'icons/apple-touch-icon.png').size == (180, 180)
               assert Image.open(base/'icons/icon-192.png').size == (192, 192)
               assert Image.open(base/'icons/icon-512.png').size == (512, 512)
@@ -183,7 +181,7 @@ jobs:
           print('Todos os links internos do Menu e Diagnóstico foram validados.')
           PY
 
-          echo "Manual validado: Oficial ${STABLE_RELEASE} preservado; Beta ${BETA_LABEL} isolada; SW desativado; menu independente; boot e ícones conferidos."
+          echo "Manual validado: Oficial ${STABLE_RELEASE} preservado; Beta ${BETA_LABEL} isolada; SW desativado; menu independente; boot, recuperação, diagnóstico e ícones conferidos."
 
       - name: Habilitar e configurar Pages
         uses: actions/configure-pages@v5
