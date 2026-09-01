@@ -38,10 +38,15 @@ jobs:
       - name: Montar ambientes isolados
         run: python3 prepare_environments.py
 
-      - name: Proteger rotas das ferramentas
-        run: python3 postbuild_route_guard.py
+      - name: Preparar ferramentas de ícones
+        run: python3 -m pip install --quiet pillow
 
-      - name: Conferir páginas, ícones, rotas e isolamento
+      - name: Aplicar manual de estabilidade PWA
+        run: |
+          python3 -m py_compile manual_pwa_hardening.py
+          python3 manual_pwa_hardening.py
+
+      - name: Conferir arquitetura, dados, menu e ícones
         run: |
           set -e
           for file in \
@@ -56,6 +61,9 @@ jobs:
             _site/environment.json \
             _site/ambientes.json \
             _site/apple-touch-icon.png \
+            _site/icons/apple-touch-icon.png \
+            _site/icons/icon-192.png \
+            _site/icons/icon-512.png \
             _site/icons/menu.svg \
             _site/icons/diagnostic.svg \
             _site/icons/launch.svg \
@@ -68,6 +76,9 @@ jobs:
             _site/beta/beta-tools.js \
             _site/beta/environment.json \
             _site/beta/apple-touch-icon.png \
+            _site/beta/icons/apple-touch-icon.png \
+            _site/beta/icons/icon-192.png \
+            _site/beta/icons/icon-512.png \
             _site/beta/icons/launch.svg \
             _site/beta/icons/recover.svg \
             _site/beta/icons/safe.svg
@@ -75,21 +86,64 @@ jobs:
             test -s "$file"
           done
 
+          # Oficial vem da branch stable; Beta vem da main e usa armazenamento próprio.
           grep -q 'app-environment.*official' _site/index.html
           grep -q 'app-environment.*beta' _site/beta/index.html
           grep -q 'meu-dinheiro-inteligente-beta' _site/beta/assets/*.js
           ! grep -q '"meu-dinheiro-inteligente-state"' _site/beta/assets/*.js
-          grep -q 'Oficial → Beta' _site/menu.html
-          grep -q 'finance-tools-page.*menu' _site/menu.html
-          grep -q 'data-finance-menu-route-guard' _site/menu.html
-          grep -q 'central-clean-entry' _site/central.html
-          grep -q 'acceptsHtml && !isAppNavigation' _site/sw.js
-          grep -q 'acceptsHtml && !isAppNavigation' _site/beta/sw.js
-          grep -q 'NÃO toca no app Oficial\|Não toca no Oficial\|NÃO TOCA NO OFICIAL' _site/beta/recover.html _site/diagnostico/index.html
           cmp -s _site/apple-touch-icon.png _stable/apple-touch-icon.png
           cmp -s _site/beta/apple-touch-icon.png apple-touch-icon.png
           ! cmp -s _site/apple-touch-icon.png _site/beta/apple-touch-icon.png
 
+          # Durante desenvolvimento nenhum bundle registra novo Service Worker.
+          ! grep -R -q 'serviceWorker.register' _site/assets _site/beta/assets
+          grep -q 'Service Worker aposentado durante o desenvolvimento' _site/sw.js
+          grep -q 'Service Worker aposentado durante o desenvolvimento' _site/beta/sw.js
+          ! grep -q 'addEventListener("fetch"' _site/sw.js
+          ! grep -q 'addEventListener("fetch"' _site/beta/sw.js
+
+          # Menu é página independente: somente links, sem app shell, DB ou JavaScript.
+          grep -q 'finance-tools-page.*menu' _site/menu.html
+          grep -q 'repeat(2,minmax(0,1fr))' _site/menu.html
+          ! grep -q '<script' _site/menu.html
+          ! grep -q 'assets/' _site/menu.html
+          ! grep -q 'app-shell' _site/menu.html
+          ! grep -q 'id="root"' _site/menu.html
+
+          # Boot resiliente e diagnóstico real.
+          grep -q 'mdBootFallback' _site/index.html
+          grep -q 'mdBootFallback' _site/beta/index.html
+          grep -q 'Ambiente web' _site/index.html
+          grep -q 'Interface funcional' _site/index.html
+          grep -q 'Registros reais de SW' _site/diagnostico/index.html
+          grep -q 'Caches reais' _site/diagnostico/index.html
+
+          # Recuperação preserva dados e a Beta nunca toca no Oficial.
+          grep -q 'Seus dados foram preservados' _site/recover.html
+          grep -q 'NÃO toca no app Oficial\|Não toca no Oficial\|NÃO TOCA NO OFICIAL' _site/beta/recover.html _site/diagnostico/index.html
+          ! grep -R -q 'localStorage.clear' _site/recover.html _site/beta/recover.html
+          ! grep -R -q 'indexedDB.deleteDatabase' _site/recover.html _site/beta/recover.html
+
+          # Manifestos devem abrir o próprio ambiente, com ícones 192/512 e apple-touch-icon 180.
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          from PIL import Image
+
+          root = Path('_site')
+          for base in (root, root/'beta'):
+              manifest = json.loads((base/'manifest.webmanifest').read_text(encoding='utf-8'))
+              assert manifest['start_url'] == './'
+              assert manifest['scope'] == './'
+              sizes = {icon['sizes'] for icon in manifest['icons']}
+              assert {'192x192', '512x512'} <= sizes
+              assert Image.open(base/'icons/apple-touch-icon.png').size == (180, 180)
+              assert Image.open(base/'icons/icon-192.png').size == (192, 192)
+              assert Image.open(base/'icons/icon-512.png').size == (512, 512)
+          print('Manifestos e dimensões de ícones validados.')
+          PY
+
+          # Todos os links internos do Menu e Diagnóstico precisam existir no artifact final.
           python3 - <<'PY'
           from pathlib import Path
           from html.parser import HTMLParser
@@ -121,7 +175,7 @@ jobs:
           print('Todos os links internos do Menu e Diagnóstico foram validados.')
           PY
 
-          echo "Oficial ${STABLE_RELEASE} preservado; Beta ${BETA_LABEL} isolada; menu protegido contra fallback do app."
+          echo "Manual validado: Oficial ${STABLE_RELEASE} preservado; Beta ${BETA_LABEL} isolada; SW desativado; menu independente; boot e ícones conferidos."
 
       - name: Habilitar e configurar Pages
         uses: actions/configure-pages@v5
