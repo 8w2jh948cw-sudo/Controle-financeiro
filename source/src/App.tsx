@@ -41,7 +41,7 @@ const dateGroupLabel = (date: string) => {
   const label = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long" }).format(new Date(date + "T12:00:00"));
   return label.charAt(0).toUpperCase() + label.slice(1);
 };
-const cleanLegacySettings = (settings: AppState["settings"] & { userName?: string }) => Object.fromEntries(Object.entries(settings).filter(([key]) => key !== "userName")) as unknown as AppState["settings"];
+const cleanLegacySettings = (settings?: (Partial<AppState["settings"]> & { userName?: string })) => Object.fromEntries(Object.entries(settings || {}).filter(([key]) => key !== "userName")) as Partial<AppState["settings"]>;
 const monthLabel = (key: string) => {
   const [year, month] = key.split("-").map(Number);
   const label = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date(year, month - 1, 1));
@@ -111,13 +111,15 @@ function AppHeader({ state, onSettings, onToggleValues, onDemoInfo }: { state: A
   </header>;
 }
 
-function MonthPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const options = Array.from({ length: 12 }, (_, index) => {
+function MonthPicker({ value, onChange, transactionDates = [] }: { value: string; onChange: (value: string) => void; transactionDates?: string[] }) {
+  const recent = Array.from({ length: 12 }, (_, index) => {
     const date = new Date();
     date.setDate(1);
     date.setMonth(date.getMonth() - index);
     return localISODate(date).slice(0, 7);
   });
+  const options = [...new Set([value, ...recent, ...transactionDates.map((date) => date.slice(0, 7)).filter((month) => /^\d{4}-\d{2}$/.test(month))])]
+    .sort((a, b) => b.localeCompare(a));
   return <label className="month-picker"><Icon name="calendar" size={18} /><select value={value} onChange={(event) => onChange(event.target.value)}>{options.map((item) => <option key={item} value={item}>{monthLabel(item)}</option>)}</select><Icon name="down" size={16} /></label>;
 }
 
@@ -162,7 +164,7 @@ function HomeView({ state, month, setMonth, onModal, onTab, onReviewPending }: {
 
   return <main className="page home-page">
     <div className="home-toolbar">
-      <MonthPicker value={month} onChange={setMonth} />
+      <MonthPicker value={month} onChange={setMonth} transactionDates={state.transactions.map((item) => item.date)} />
       <button className="home-import-button" onClick={() => onModal({ type: "import" })}><Icon name="import" size={19} /><span>Importar</span></button>
     </div>
 
@@ -219,7 +221,7 @@ function TransactionsView({ state, month, setMonth, onEdit, onCategories, review
     .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)), [state.transactions, month, filter, search]);
   const totals = monthTotals(state.transactions, month);
   return <main className="page">
-    <div className="page-title"><div><span className="eyebrow">EXTRATO</span><h1>Todos os lançamentos</h1></div><div className="page-title-actions"><MonthPicker value={month} onChange={setMonth} /><button className="category-access-button" onClick={onCategories}><Icon name="filter" size={17} /> Categorias</button></div></div>
+    <div className="page-title"><div><span className="eyebrow">EXTRATO</span><h1>Todos os lançamentos</h1></div><div className="page-title-actions"><MonthPicker value={month} onChange={setMonth} transactionDates={state.transactions.map((item) => item.date)} /><button className="category-access-button" onClick={onCategories}><Icon name="filter" size={17} /> Categorias</button></div></div>
     <section className="mini-summary"><span><small>Entradas</small><strong className="income">{hideableMoney(totals.income, state.settings.hiddenValues)}</strong></span><span><small>Saídas</small><strong className="expense">{hideableMoney(totals.expense, state.settings.hiddenValues)}</strong></span><span><small>Resultado</small><strong>{hideableMoney(totals.income - totals.expense, state.settings.hiddenValues)}</strong></span></section>
     <label className="search-field"><Icon name="search" size={20} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por nome ou observação" /></label>
     <div className="filter-chips"><button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>Todos</button><button className={filter === "expense" ? "active" : ""} onClick={() => setFilter("expense")}>Saídas</button><button className={filter === "income" ? "active" : ""} onClick={() => setFilter("income")}>Entradas</button><button className={filter === "pending" ? "active pending-filter" : "pending-filter"} onClick={() => setFilter("pending")}><Icon name="edit" size={15} /> Pendentes ({state.transactions.filter((item) => item.needsReview).length})</button></div>
@@ -306,7 +308,7 @@ function AnalysisView({ state, month, setMonth, onCategories, onComparisonMonths
   return <main className="page">
     <div className="page-title analysis-title"><h1>Gráficos</h1></div>
     <section className="chart-card category-chart">
-      <div className="analysis-month-picker"><MonthPicker value={month} onChange={setMonth} /><button className="category-access-button icon-only" onClick={onCategories} aria-label="Ver e configurar categorias"><Icon name="filter" size={19} /></button></div>
+      <div className="analysis-month-picker"><MonthPicker value={month} onChange={setMonth} transactionDates={state.transactions.map((item) => item.date)} /><button className="category-access-button icon-only" onClick={onCategories} aria-label="Ver e configurar categorias"><Icon name="filter" size={19} /></button></div>
       <div className="donut-wrap"><div className="donut" style={{ "--segments": `conic-gradient(${segments})` } as CSSProperties}><span><small>Total</small><strong>{state.settings.hiddenValues ? "••••" : money.format(total)}</strong></span></div></div>
       <div className="category-breakdown">{items.map((item) => {
         const share = total ? Math.round(item.amount / total * 100) : 0;
@@ -566,9 +568,20 @@ function SettingsSheet({ state, onClose, onState, onRules, onNavLab }: { state: 
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const parsed = JSON.parse(await file.text()) as AppState;
+      const decoded = JSON.parse(await file.text()) as AppState | { state?: AppState };
+      const parsed = "state" in decoded && decoded.state ? decoded.state : decoded as AppState;
       if (!Array.isArray(parsed.transactions) || !Array.isArray(parsed.accounts)) throw new Error();
-      onState({ ...parsed, settings: { ...initialState.settings, ...cleanLegacySettings(parsed.settings) } });
+      onState({
+        ...initialState,
+        ...parsed,
+        transactions: parsed.transactions,
+        accounts: parsed.accounts,
+        categories: Array.isArray(parsed.categories) ? parsed.categories : initialState.categories,
+        budgets: Array.isArray(parsed.budgets) ? parsed.budgets : [],
+        goals: Array.isArray(parsed.goals) ? parsed.goals : [],
+        rules: Array.isArray(parsed.rules) ? parsed.rules : [],
+        settings: { ...initialState.settings, ...cleanLegacySettings(parsed.settings) },
+      });
       onClose();
     } catch {
       window.alert("Este arquivo não parece ser um backup válido do app.");
@@ -743,7 +756,13 @@ export default function App() {
     }
     setHydrated(true);
   }); }, []);
-  useEffect(() => { if (!hydrated) return; const timer = setTimeout(() => void saveState(state), 250); return () => clearTimeout(timer); }, [state, hydrated]);
+  useEffect(() => {
+    if (!hydrated) return;
+    const timer = setTimeout(() => {
+      void saveState(state).catch((error) => console.error("Falha ao salvar o estado do app", error));
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [state, hydrated]);
   useEffect(() => { document.body.classList.toggle("modal-open", !!modal); return () => document.body.classList.remove("modal-open"); }, [modal]);
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");

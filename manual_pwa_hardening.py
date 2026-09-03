@@ -31,54 +31,6 @@ def resize_icons(target: Path) -> None:
             resized.save(icon_dir / name, format="PNG", optimize=True)
 
 
-def retirement_sw(prefixes: list[str]) -> str:
-    prefix_json = json.dumps(prefixes, ensure_ascii=False)
-    return f'''/* Meu Dinheiro — Service Worker aposentado durante o desenvolvimento.
-   Não intercepta fetch. Apenas remove caches antigos e se desregistra. */
-const OWN_CACHE_PREFIXES = {prefix_json};
-
-self.addEventListener("install", () => {{
-  self.skipWaiting();
-}});
-
-self.addEventListener("activate", (event) => {{
-  event.waitUntil((async () => {{
-    try {{
-      const keys = await caches.keys();
-      await Promise.allSettled(
-        keys
-          .filter((key) => OWN_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix)))
-          .map((key) => caches.delete(key))
-      );
-    }} catch (_) {{}}
-
-    try {{
-      await self.registration.unregister();
-    }} catch (_) {{}}
-
-    try {{
-      const clients = await self.clients.matchAll({{ type: "window", includeUncontrolled: true }});
-      for (const client of clients) client.postMessage({{ type: "MD_SW_RETIRED" }});
-    }} catch (_) {{}}
-  }})());
-}});
-'''
-
-
-def disable_sw_registration(asset_dir: Path) -> int:
-    changed = 0
-    pattern = re.compile(
-        r'navigator\.serviceWorker\.register\(\s*(["\'])\./sw\.js\1\s*\)'
-    )
-    for js in asset_dir.glob("*.js"):
-        text = js.read_text(encoding="utf-8")
-        patched, count = pattern.subn("Promise.resolve(null)", text)
-        if count:
-            js.write_text(patched, encoding="utf-8")
-            changed += count
-    return changed
-
-
 BOOT_STYLE = r'''
 <style data-md-resilient-boot>
 #mdBootFallback{position:fixed;inset:0;z-index:2147482000;display:grid;place-items:center;padding:calc(22px + env(safe-area-inset-top)) 18px calc(22px + env(safe-area-inset-bottom));background:#f6f7f4;color:#101412;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}
@@ -93,6 +45,7 @@ BOOT_STYLE = r'''
 def boot_markup(release: str, beta: bool) -> str:
     accent = "#3478F6" if beta else "#168753"
     label = "BETA" if beta else "OFICIAL"
+    menu_path = "../menu.html" if beta else "./menu.html"
     return f'''<div id="mdBootFallback" style="--md-boot-accent:{accent}">
   <section id="mdBootCard" role="status" aria-live="polite">
     <h1>Meu Dinheiro{" Beta" if beta else ""}</h1>
@@ -108,7 +61,7 @@ def boot_markup(release: str, beta: bool) -> str:
     <p id="mdBootMessage">Abrindo a interface sem depender da limpeza de cache.</p>
     <div class="mdBootActions" id="mdBootActions">
       <a href="./safe.html">Modo seguro</a>
-      <a href="./menu.html">Menu principal</a>
+      <a href="{menu_path}">Menu principal</a>
     </div>
   </section>
 </div>'''
@@ -431,12 +384,6 @@ resize_icons(beta)
 patch_manifest(official / "manifest.webmanifest", beta=False)
 patch_manifest(beta / "manifest.webmanifest", beta=True)
 
-official_replacements = disable_sw_registration(official / "assets")
-beta_replacements = disable_sw_registration(beta / "assets")
-
-(official / "sw.js").write_text(retirement_sw(["meu-dinheiro-oficial-", "meu-dinheiro-inteligente-v"]), encoding="utf-8")
-(beta / "sw.js").write_text(retirement_sw(["meu-dinheiro-beta-"]), encoding="utf-8")
-
 official_release = json.loads((official / "environment.json").read_text(encoding="utf-8"))["release"]
 beta_release = json.loads((beta / "environment.json").read_text(encoding="utf-8"))["release"]
 patch_index(official / "index.html", official_release, beta=False)
@@ -489,10 +436,14 @@ for manifest in (official / "manifest.webmanifest", beta / "manifest.webmanifest
     if not {"192x192", "512x512"}.issubset(sizes):
         raise SystemExit(f"Ícones 192/512 ausentes em {manifest}")
 
-if any("serviceWorker.register" in p.read_text(encoding="utf-8") for p in official.glob("assets/*.js")):
-    raise SystemExit("Oficial ainda registra Service Worker")
-if any("serviceWorker.register" in p.read_text(encoding="utf-8") for p in beta.glob("assets/*.js")):
-    raise SystemExit("Beta ainda registra Service Worker")
+if not any("serviceWorker.register" in p.read_text(encoding="utf-8") for p in official.glob("assets/*.js")):
+    raise SystemExit("Oficial não registra o Service Worker offline")
+if not any("serviceWorker.register" in p.read_text(encoding="utf-8") for p in beta.glob("assets/*.js")):
+    raise SystemExit("Beta não registra o Service Worker offline")
+if 'addEventListener("fetch"' not in (official / "sw.js").read_text(encoding="utf-8"):
+    raise SystemExit("Oficial sem funcionamento offline")
+if 'addEventListener("fetch"' not in (beta / "sw.js").read_text(encoding="utf-8"):
+    raise SystemExit("Beta sem funcionamento offline")
 
 menu_text = (ROOT / "menu.html").read_text(encoding="utf-8")
 if "<script" in menu_text:
@@ -501,5 +452,5 @@ if "repeat(2,minmax(0,1fr))" not in menu_text:
     raise SystemExit("Menu não está protegido contra overflow em duas colunas")
 
 print(f"[OK] Manual aplicado: Oficial {official_release} preservado; Beta {beta_release} isolada.")
-print(f"[OK] Service Worker desativado no desenvolvimento (registros removidos do bundle: oficial={official_replacements}, beta={beta_replacements}).")
+print("[OK] Service Worker atualizado: HTML busca a versão nova e arquivos essenciais funcionam offline.")
 print("[OK] Menu independente, boot resiliente, diagnóstico real, recuperação não destrutiva e ícones iPhone 180/192/512 preparados.")

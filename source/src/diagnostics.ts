@@ -7,12 +7,6 @@ const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "
 
 export const currentMonthKey = () => dateMonthKey(new Date());
 
-export const previousMonthKey = () => {
-  const date = new Date();
-  date.setMonth(date.getMonth() - 1);
-  return dateMonthKey(date);
-};
-
 const previousKeyFor = (key: string) => {
   const [year, month] = key.split("-").map(Number);
   return dateMonthKey(new Date(year, month - 2, 1));
@@ -74,7 +68,7 @@ export const accountBalance = (account: Account, transactions: Transaction[]) =>
   if (account.type === "credit") {
     return transactions
       .filter((transaction) => transaction.accountId === account.id && transaction.kind === "expense")
-      .reduce((sum, transaction) => sum + transaction.amount, 0);
+      .reduce((sum, transaction) => sum + transaction.amount, account.openingBalance);
   }
   return transactions.reduce((balance, transaction) => {
     if (transaction.kind === "income" && transaction.accountId === account.id) return balance + transaction.amount;

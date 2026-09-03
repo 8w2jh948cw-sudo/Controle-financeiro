@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 import os
+import re
 import shutil
 
 ROOT = Path(__file__).resolve().parent
@@ -79,10 +80,13 @@ def patch_manifest(path: Path, release: str, beta: bool) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def service_worker(cache_name: str, cache_prefix: str) -> str:
+def service_worker(cache_name: str, cache_prefix: str, target: Path) -> str:
+    index = (target / "index.html").read_text(encoding="utf-8")
+    assets = re.findall(r'(?:src|href)="(\./assets/[^"]+)"', index)
+    core = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png", *assets]
     template = r'''const CACHE = "__CACHE__";
 const CACHE_PREFIX = "__PREFIX__";
-const CORE = ["./", "./index.html", "./manifest.webmanifest", "./apple-touch-icon.png"];
+const CORE = __CORE__;
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -103,8 +107,21 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   const acceptsHtml = request.headers.get("accept")?.includes("text/html");
+  const scopePath = new URL(self.registration.scope).pathname;
+  const isAppNavigation = url.pathname === scopePath || url.pathname === scopePath + "index.html";
+  if (acceptsHtml && !isAppNavigation) return;
   if (acceptsHtml) {
-    event.respondWith(fetch(request).catch(() => caches.match("./index.html")));
+    event.respondWith(
+      fetch(request, { cache: "no-store" })
+        .then((response) => {
+          if (response && response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE).then((cache) => cache.put("./index.html", copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match("./index.html")),
+    );
     return;
   }
   event.respondWith(
@@ -118,7 +135,7 @@ self.addEventListener("fetch", (event) => {
   );
 });
 '''
-    return fill(template, cache=cache_name, prefix=cache_prefix)
+    return fill(template, cache=cache_name, prefix=cache_prefix, core=json.dumps(core, ensure_ascii=False))
 
 
 def glass_icon(kind: str, beta: bool = False) -> str:
@@ -247,7 +264,7 @@ SITE.mkdir(parents=True)
 copy_runtime(STABLE, SITE)
 patch_index(SITE / "index.html", "official", STABLE_RELEASE, beta=False)
 patch_manifest(SITE / "manifest.webmanifest", STABLE_RELEASE, beta=False)
-(SITE / "sw.js").write_text(service_worker(f"meu-dinheiro-oficial-{STABLE_RELEASE}-{SHELL_REVISION}", "meu-dinheiro-oficial-"), encoding="utf-8")
+(SITE / "sw.js").write_text(service_worker(f"meu-dinheiro-oficial-{STABLE_RELEASE}-{SHELL_REVISION}", "meu-dinheiro-oficial-", SITE), encoding="utf-8")
 write_tool_pages(SITE, STABLE_RELEASE, beta=False)
 write_environment_json(SITE / "environment.json", beta=False)
 
@@ -260,7 +277,7 @@ for js_path in (beta / "assets").glob("*.js"):
     js_path.write_text(text, encoding="utf-8")
 patch_index(beta / "index.html", "beta", BETA_LABEL, beta=True)
 patch_manifest(beta / "manifest.webmanifest", BETA_LABEL, beta=True)
-(beta / "sw.js").write_text(service_worker(f"meu-dinheiro-beta-{BETA_LABEL}-{SHELL_REVISION}", "meu-dinheiro-beta-"), encoding="utf-8")
+(beta / "sw.js").write_text(service_worker(f"meu-dinheiro-beta-{BETA_LABEL}-{SHELL_REVISION}", "meu-dinheiro-beta-", beta), encoding="utf-8")
 write_tool_pages(beta, BETA_LABEL, beta=True)
 write_environment_json(beta / "environment.json", beta=True)
 

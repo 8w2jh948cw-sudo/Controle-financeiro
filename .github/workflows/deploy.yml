@@ -16,7 +16,7 @@ concurrency:
 
 env:
   STABLE_RELEASE: "1.0.0"
-  BETA_LABEL: "1.1.0-beta.2"
+  BETA_LABEL: "1.1.0-beta.${{ github.run_number }}"
   PUBLIC_BASE: "https://8w2jh948cw-sudo.github.io/Controle-financeiro"
 
 jobs:
@@ -36,6 +36,29 @@ jobs:
           path: _stable
           persist-credentials: false
 
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+
+      - name: Compilar e conferir o código da Beta
+        working-directory: source
+        run: |
+          npm ci
+          npm run build
+
+      - name: Atualizar arquivos compilados usados pela Beta
+        run: |
+          find assets -type f -delete
+          cp -R source/dist/assets/. assets/
+          cp source/dist/index.html index.html
+          cp source/dist/manifest.webmanifest manifest.webmanifest
+          cp source/dist/apple-touch-icon.png apple-touch-icon.png
+          cp source/dist/icon.svg icon.svg
+          cp source/dist/sw.js sw.js
+
       - name: Montar ambientes isolados
         run: python3 prepare_environments.py
 
@@ -49,9 +72,8 @@ jobs:
 
       - name: Aplicar manual de estabilidade PWA
         run: |
-          python3 -m py_compile manual_pwa_hardening.py post_hardening_fixes.py
+          python3 -m py_compile manual_pwa_hardening.py
           python3 manual_pwa_hardening.py
-          python3 post_hardening_fixes.py
 
       - name: Conferir arquitetura, dados, menu e ícones
         run: |
@@ -99,11 +121,14 @@ jobs:
           ! grep -q '"meu-dinheiro-inteligente-state"' _site/beta/assets/*.js
           ! cmp -s _site/apple-touch-icon.png _site/beta/apple-touch-icon.png
 
-          ! grep -R -q 'serviceWorker.register' _site/assets _site/beta/assets
-          grep -q 'Service Worker aposentado durante o desenvolvimento' _site/sw.js
-          grep -q 'Service Worker aposentado durante o desenvolvimento' _site/beta/sw.js
-          ! grep -q 'addEventListener("fetch"' _site/sw.js
-          ! grep -q 'addEventListener("fetch"' _site/beta/sw.js
+          grep -R -q 'serviceWorker.register' _site/assets
+          grep -R -q 'serviceWorker.register' _site/beta/assets
+          grep -q 'addEventListener("fetch"' _site/sw.js
+          grep -q 'addEventListener("fetch"' _site/beta/sw.js
+          grep -Eq '\./assets/.+\.css' _site/sw.js
+          grep -Eq '\./assets/.+\.js' _site/sw.js
+          grep -Eq '\./assets/.+\.css' _site/beta/sw.js
+          grep -Eq '\./assets/.+\.js' _site/beta/sw.js
 
           # Regras críticas do manual atualizado para o Menu.
           grep -q 'finance-tools-page.*menu' _site/menu.html
@@ -182,6 +207,11 @@ jobs:
           PY
 
       - name: Habilitar e configurar Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow
+
+      - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true

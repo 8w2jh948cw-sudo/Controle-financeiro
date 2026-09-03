@@ -39,7 +39,13 @@ export const loadState = async (): Promise<AppState | null> => {
 };
 
 export const saveState = async (state: AppState): Promise<void> => {
-  localStorage.setItem(FALLBACK_KEY, JSON.stringify(state));
+  let saved = false;
+  try {
+    localStorage.setItem(FALLBACK_KEY, JSON.stringify(state));
+    saved = true;
+  } catch {
+    // O localStorage é pequeno e pode ficar cheio. O IndexedDB ainda deve ser tentado.
+  }
   try {
     const db = await openDatabase();
     await new Promise<void>((resolve, reject) => {
@@ -49,23 +55,9 @@ export const saveState = async (state: AppState): Promise<void> => {
       transaction.onerror = () => reject(transaction.error);
     });
     db.close();
+    saved = true;
   } catch {
-    // O backup no localStorage já foi salvo.
+    // Se o IndexedDB falhar, o localStorage ainda pode ter preservado os dados.
   }
-};
-
-export const clearStoredState = async (): Promise<void> => {
-  localStorage.removeItem(FALLBACK_KEY);
-  try {
-    const db = await openDatabase();
-    await new Promise<void>((resolve, reject) => {
-      const transaction = db.transaction(STORE_NAME, "readwrite");
-      transaction.objectStore(STORE_NAME).delete(STATE_KEY);
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error);
-    });
-    db.close();
-  } catch {
-    // Não há mais nada a fazer no armazenamento alternativo.
-  }
+  if (!saved) throw new Error("Não foi possível salvar os dados neste navegador.");
 };
